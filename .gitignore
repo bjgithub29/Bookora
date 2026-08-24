@@ -1,0 +1,26 @@
+# Ignore environment variables file
+.env
+
+# Secrets / service-account credentials (never commit)
+*-credentials.json
+serviceAccount*.json
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

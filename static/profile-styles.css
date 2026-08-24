@@ -1,0 +1,276 @@
+/* ==========================================
+   MY PROFILE PAGE - BOOKORA CORAL THEME
+   ========================================== */
+
+body {
+    background-color: #faf8f5;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* City Display - Match Homepage Exactly */
+.city-display {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    border: 1px solid #e8e3dc;
+    box-shadow: 0 1px 3px rgba(212, 165, 154, 0.1);
+    color: #2a2520;
+    font-weight: 500;
+}
+
+.city-display i {
+    color: #d4a59a;
+    margin-right: 0.5rem;
+}
+
+/* Spacing between city and profile section */
+.nav-item.profile-section,
+.nav-item.auth-buttons {
+    margin-left: 1.5rem;
+}
+
+.profile-container-main {
+    max-width: 800px;
+    margin: 100px auto 60px;
+    padding: 0 20px;
+}
+
+.profile-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.profile-header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 600;
+    color: #2a2520;
+    margin-bottom: 8px;
+}
+
+.profile-header p {
+    color: #6b6560;
+    font-size: 16px;
+}
+
+.profile-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 2px 8px rgba(42, 37, 32, 0.05);
+    border: 1px solid #e8e3dc;
+}
+
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.form-row label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #2a2520;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-input-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+}
+
+.form-control {
+    flex: 1;
+    padding: 14px 16px;
+    border: 1.5px solid #e8e3dc;
+    border-radius: 10px;
+    font-size: 16px;
+    color: #2a2520;
+    background: #faf8f5;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #d4a59a;
+    background: #ffffff;
+}
+
+.form-control[readonly]:not(.editing) {
+    background: #f5f2ed;
+    color: #6b6560;
+    cursor: default;
+}
+
+.form-control[disabled] {
+    background: #f5f2ed;
+    color: #9b9691;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.form-control.editing {
+    background: #ffffff;
+    border-color: #d4a59a;
+    box-shadow: 0 0 0 3px rgba(212, 165, 154, 0.1);
+}
+
+.readonly-label {
+    position: absolute;
+    right: 16px;
+    font-size: 12px;
+    color: #9b9691;
+    background: #f5f2ed;
+    padding: 4px 10px;
+    border-radius: 6px;
+    pointer-events: none;
+}
+
+.btn-edit {
+    padding: 12px 24px;
+    background: #ffffff;
+    color: #d4a59a;
+    border: 1.5px solid #d4a59a;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.btn-edit:hover {
+    background: #d4a59a;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.btn-edit i {
+    font-size: 13px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.btn-save,
+.btn-cancel {
+    padding: 14px 28px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+}
+
+.btn-save {
+    background: #d4a59a;
+    color: #ffffff;
+    flex: 1;
+}
+
+.btn-save:hover:not(:disabled) {
+    background: #c89587;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(212, 165, 154, 0.3);
+}
+
+.btn-save:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-cancel {
+    background: #ffffff;
+    color: #6b6560;
+    border: 1.5px solid #e8e3dc;
+}
+
+.btn-cancel:hover {
+    background: #f5f2ed;
+    border-color: #d4a59a;
+}
+
+.message-box {
+    margin-top: 20px;
+}
+
+.message-box .alert {
+    padding: 14px 18px;
+    border-radius: 10px;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.message-box .alert-success {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.message-box .alert-danger {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.message-box .alert i {
+    font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .profile-container-main {
+        margin-top: 80px;
+    }
+    
+    .profile-card {
+        padding: 28px 20px;
+    }
+    
+    .profile-header h1 {
+        font-size: 28px;
+    }
+    
+    .form-input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn-edit {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn-save,
+    .btn-cancel {
+        width: 100%;
+        justify-content: center;
+    }
+}

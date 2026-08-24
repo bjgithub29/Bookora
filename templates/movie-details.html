@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Details - Bookora</title>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+    
+    <!-- Main Styles -->
+    <link href="/static/styles.css" rel="stylesheet">
+    
+    <!-- Sign-In Modal Styles -->
+    <link href="/static/signin-modal.css" rel="stylesheet">
+    
+    <!-- Profile Completion Styles -->
+    <link href="/static/profile-completion-styles.css" rel="stylesheet">
+    
+    <!-- Movie Details Styles -->
+    <link href="/static/movie-details-styles.css" rel="stylesheet">
+</head>
+<body>
+    
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-bookora" id="mainNavbar">
+        <div class="container-fluid" style="padding: 0 2rem;">
+            <!-- Logo (hidden when scrolled) -->
+            <a class="navbar-brand" href="/" id="navbarLogo">Bookora</a>
+            
+            <!-- Movie Title (shown when scrolled) -->
+            <div class="navbar-movie-title-scrolled" id="navbarMovieTitleScrolled" style="display: none;">
+                <span id="navbarTitleTextScrolled">Movie Title</span>
+            </div>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <!-- Menu Items (hidden when scrolled) -->
+                <ul class="navbar-nav me-auto ms-4" id="navbarMenu">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/#movies">Movies</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="openEventsModal(event)">Events</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="openOffersModal(event)">Offers</a>
+                    </li>
+                </ul>
+                
+                <!-- City Display (hidden when scrolled) -->
+                <div class="city-display" id="navbarCity">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>Ahmedabad, Gujarat</span>
+                </div>
+                
+                <!-- Auth State Container: shows login button OR profile dropdown (hidden when scrolled) -->
+                <div id="authContainer" class="navbar-auth" style="display: flex; margin-left: 1.5rem;">
+                    <!-- Logged Out State -->
+                    <div id="loggedOutState" class="auth-buttons">
+                        <button class="btn-signup" onclick="openSignInModal()">Login / Signup</button>
+                    </div>
+                    
+                    <!-- Logged In State -->
+                    <div id="loggedInState" class="profile-container" style="display: none;">
+                        <div class="profile-avatar" onclick="toggleProfileDropdown()">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        
+                        <!-- Profile Dropdown -->
+                        <div id="profileDropdown" class="profile-dropdown">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-name" id="profileDisplayName">User Name</div>
+                                <div class="profile-contact" id="profileDisplayContact">user@email.com</div>
+                            </div>
+                            <div class="profile-dropdown-divider"></div>
+                            <a href="#" class="profile-dropdown-item" onclick="navigateToProfile(event)">
+                                <i class="fas fa-user"></i>
+                                <span>My Profile</span>
+                            </a>
+                            <a href="#" class="profile-dropdown-item" onclick="navigateToBookings(event)">
+                                <i class="fas fa-ticket-alt"></i>
+                                <span>My Bookings</span>
+                            </a>
+                            <a href="#" class="profile-dropdown-item" onclick="navigateToSavedMovies(event)">
+                                <i class="fas fa-heart"></i>
+                                <span>Saved Movies</span>
+                            </a>
+                            <div class="profile-dropdown-divider"></div>
+                            <a href="#" class="profile-dropdown-item logout-item" onclick="handleLogout(event)">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Book Now Button (shown ONLY when scrolled) -->
+                <button class="navbar-book-btn-scrolled" id="navbarBookBtnScrolled" style="display: none;" onclick="handleBookNow()">
+                    <i class="fas fa-film"></i> Book Now
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- ==========================================
+         SIGN-IN MODAL
+         ========================================== -->
+    
+    <div class="modal-overlay" id="signinModal">
+        <div class="signin-modal">
+            <button class="modal-close" onclick="closeSignInModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="modal-header">
+                <h2 id="signinModalTitle">Welcome to Bookora</h2>
+                <p id="signinModalSubtitle">Choose your preferred sign-in method</p>
+            </div>
+            
+            <div class="auth-options">
+                <button class="auth-option-btn" onclick="selectAuthMethod('Email')">
+                    <i class="fas fa-envelope"></i>
+                    <span>Continue with Email</span>
+                </button>
+            </div>
+            
+            <div class="modal-footer">
+                By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hero Banner Section - BookMyShow-Inspired Layout -->
+    <div class="details-hero" id="movieBanner">
+        <div class="banner-gradient-overlay"></div>
+        <div class="banner-2zone-layout">
+            
+            <!-- LEFT ZONE: Poster + Movie Details (70%) -->
+            <div class="banner-zone-left-content">
+                <!-- Poster -->
+                <div class="banner-poster-card">
+                    <img id="bannerPoster" class="banner-poster-img" src="" alt="Movie Poster">
+                    <div class="trailer-badge" onclick="openTrailer()" id="trailerBadge">
+                        <i class="fab fa-youtube"></i>
+                        <span>Trailer</span>
+                    </div>
+                </div>
+                
+                <!-- Movie Info -->
+                <div class="banner-movie-details">
+                    <h1 class="banner-movie-title" id="movieTitle">Loading...</h1>
+
+                    <!-- Movie Metadata - Vertical Icon Rows -->
+                    <div class="banner-metadata-rows" id="bannerMetadata">
+                        <!-- Dynamically populated with vertical rows -->
+                    </div>
+                    
+                    <!-- CTAs: Book Now + Watch Trailer + Save -->
+                    <div class="banner-cta-group">
+                        <button class="banner-cta-book" id="bannerBookBtn" onclick="handleBookNow()">
+                            <i class="fas fa-film"></i>
+                            <span>Book Now</span>
+                        </button>
+                        <button class="banner-cta-trailer" id="trailerBtn" onclick="openTrailer()">
+                            <i class="fas fa-play-circle"></i>
+                            <span>Watch Trailer</span>
+                        </button>
+                        <button class="banner-cta-save bookmark-btn" id="bookmarkBtn" onclick="toggleBookmark()" title="Save for later">
+                            <i class="far fa-heart"></i>
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- Movie Details Content -->
+    <div class="details-content">
+        <div class="section-container">
+            <!-- Info Sections -->
+            <div class="details-info">
+                <!-- Description -->
+                <div class="info-section">
+                    <h3>About the Movie</h3>
+                    <p class="description-text" id="movieDescription"></p>
+                </div>
+                
+                <!-- Cast -->
+                <div class="info-section">
+                    <h3>Cast</h3>
+                    <div class="cast-grid" id="movieCast"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Events Modal - Coming Soon -->
+    <div id="eventsModal" class="events-modal" onclick="closeEventsModal(event)">
+        <div class="events-modal-content" onclick="event.stopPropagation()">
+            <button class="events-modal-close" onclick="closeEventsModal(event)">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="events-modal-icon">
+                <i class="fas fa-calendar-star"></i>
+            </div>
+            <h3 class="events-modal-title">Coming Soon</h3>
+            <p class="events-modal-text">Events & live shows will be added to Bookora soon. Stay tuned.</p>
+        </div>
+    </div>
+
+    <!-- Offers Modal - Coming Soon -->
+    <div id="offersModal" class="events-modal" onclick="closeOffersModal(event)">
+        <div class="events-modal-content" onclick="event.stopPropagation()">
+            <button class="events-modal-close" onclick="closeOffersModal(event)">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="events-modal-icon">
+                <i class="fas fa-tags"></i>
+            </div>
+            <h3 class="events-modal-title">Exciting Offers Coming Soon!</h3>
+            <p class="events-modal-text">We're working on exclusive deals and special discounts for Bookora users. Stay tuned for exciting offers coming your way.</p>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Sign-In Modal Logic -->
+    <script src="/static/signin-modal.js"></script>
+    
+    <!-- Movie Details Script -->
+    <script src="/static/movie-details-script.js"></script>
+    
+    <!-- Events & Offers Modal Functions -->
+    <script>
+        function openEventsModal(event) {
+            event.preventDefault();
+            const modal = document.getElementById('eventsModal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeEventsModal(event) {
+            event.preventDefault();
+            const modal = document.getElementById('eventsModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+        
+        function openOffersModal(event) {
+            event.preventDefault();
+            const modal = document.getElementById('offersModal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeOffersModal(event) {
+            event.preventDefault();
+            const modal = document.getElementById('offersModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+        
+        // Close modals on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const eventsModal = document.getElementById('eventsModal');
+                const offersModal = document.getElementById('offersModal');
+                
+                if (eventsModal && eventsModal.classList.contains('active')) {
+                    eventsModal.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                }
+                
+                if (offersModal && offersModal.classList.contains('active')) {
+                    offersModal.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
