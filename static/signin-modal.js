@@ -55,29 +55,48 @@ function logoutUser() {
 
 // Update UI based on auth state
 function updateAuthUI() {
+    // Every lookup here is guarded because this function runs on all seven pages,
+    // and #loggedOutState / #loggedInState only exist on the four public ones
+    // (home, movie details, shows, seat selection). my-bookings, profile and
+    // saved-movies are logged-in-only pages: their navbar renders the profile
+    // section unconditionally and has no logged-out block at all, so both lookups
+    // return null there.
+    //
+    // Dereferencing .style on null threw a TypeError on those three pages, and
+    // since updateAuthUI() is the first statement of the DOMContentLoaded handler
+    // the throw aborted every statement after it - the modal was never reset to
+    // its default screen, a leftover sessionStorage tempEmail was never cleared,
+    // and the click-outside guard that keeps a mandatory profile-completion modal
+    // from being dismissed was never attached. It also meant the two lines below
+    // never ran, so the profile dropdown on those pages always showed the
+    // placeholder "User" with a blank contact instead of the real values.
     const loggedOutState = document.getElementById('loggedOutState');
     const loggedInState = document.getElementById('loggedInState');
+    const displayName = document.getElementById('profileDisplayName');
+    const displayContact = document.getElementById('profileDisplayContact');
     const user = getCurrentUser();
-    
+
     if (user) {
         // User is logged in - show profile avatar
-        loggedOutState.style.display = 'none';
-        loggedInState.style.display = 'flex';
-        
+        if (loggedOutState) loggedOutState.style.display = 'none';
+        if (loggedInState) loggedInState.style.display = 'flex';
+
         // Update profile info in dropdown
-        document.getElementById('profileDisplayName').textContent = user.name || 'User';
-        document.getElementById('profileDisplayContact').textContent = user.email || user.mobile || '';
+        if (displayName) displayName.textContent = user.name || 'User';
+        if (displayContact) displayContact.textContent = user.email || user.mobile || '';
     } else {
         // User is logged out - show login button
-        loggedOutState.style.display = 'flex';
-        loggedInState.style.display = 'none';
+        if (loggedOutState) loggedOutState.style.display = 'flex';
+        if (loggedInState) loggedInState.style.display = 'none';
     }
 }
 
 // Toggle profile dropdown
 function toggleProfileDropdown() {
+    // Guarded for the same reason as updateAuthUI: handleLogout() calls this
+    // before showing the logout toast, so a null here would swallow the toast.
     const dropdown = document.getElementById('profileDropdown');
-    dropdown.classList.toggle('active');
+    if (dropdown) dropdown.classList.toggle('active');
 }
 
 // Close dropdown when clicking outside
@@ -348,6 +367,12 @@ function showAuthChoiceScreen() {
 // OTP Timer variables
 let otpTimer = null;
 let otpSeconds = 30;
+// How long the Resend button stays disabled. The server enforces its own cooldown
+// (OTP_RESEND_COOLDOWN_SECONDS) and reports it as `resend_after` on a successful
+// send; a hardcoded 30 here re-enabled the button before the server would accept
+// another request, so every early click earned a 429. 30 remains the fallback for
+// a response that does not carry the field.
+let otpResendSeconds = 30;
 
 // Send Email OTP via backend API
 async function sendEmailOTP() {
@@ -394,6 +419,11 @@ async function sendEmailOTP() {
         clearTimeout(quickTransitionTimer);
         
         if (data.success) {
+            // Adopt the server's cooldown before rendering, so the countdown the
+            // user sees is the one the server will actually honour.
+            if (typeof data.resend_after === 'number' && data.resend_after > 0) {
+                otpResendSeconds = data.resend_after;
+            }
             // Show OTP screen immediately
             showEmailOTPScreen(email);
         } else {
@@ -556,11 +586,15 @@ function initializeOTPInputs() {
 
 // Start OTP timer
 function startOTPTimer() {
-    otpSeconds = 30;
+    otpSeconds = otpResendSeconds;
     const timerCount = document.getElementById('timerCount');
     const timerText = document.getElementById('timerText');
     const resendBtn = document.getElementById('resendBtn');
-    
+
+    if (!timerCount || !timerText || !resendBtn) return;
+
+    if (otpTimer) clearInterval(otpTimer);
+    timerCount.textContent = otpSeconds;
     resendBtn.disabled = true;
     timerText.style.display = 'block';
     
@@ -596,6 +630,9 @@ async function resendEmailOTP() {
         const data = await response.json();
         
         if (data.success) {
+            if (typeof data.resend_after === 'number' && data.resend_after > 0) {
+                otpResendSeconds = data.resend_after;
+            }
             // Clear all OTP boxes
             document.querySelectorAll('.otp-box').forEach(box => box.value = '');
             document.querySelectorAll('.otp-box')[0].focus();

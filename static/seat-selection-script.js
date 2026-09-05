@@ -155,8 +155,15 @@ function renderSeats() {
         rows[row].push(seat);
     });
     
-    // Render rows
+    // Render rows in order (A, B, C, ...). Within each row, sort seats by their
+    // numeric position so 2 comes before 10 — string sorting would order the
+    // labels as "A1, A10, A11, A12, A2..." and show 1,10,11,12,2,3 on screen.
     const rowKeys = Object.keys(rows).sort();
+    rowKeys.forEach(row => {
+        rows[row].sort((a, b) =>
+            parseInt(a.seat_label.substring(1), 10) - parseInt(b.seat_label.substring(1), 10)
+        );
+    });
     container.innerHTML = rowKeys.map(row => `
         <div class="seat-row">
             <div class="row-label">${row}</div>

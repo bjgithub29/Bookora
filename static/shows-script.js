@@ -101,17 +101,34 @@ document.addEventListener('click', function(e) {
 
 // Date helpers
 function getTodayDate() {
-    return new Date().toISOString().split('T')[0];
+    return getIndiaCalendarDate();
+}
+
+// Shows are sold on an India business calendar. `toISOString()` uses UTC and
+// was one day behind in India shortly after midnight; derive the date in IST
+// first, then add calendar days in UTC so a visitor's browser timezone cannot
+// change the seven dates Bookora offers.
+function getIndiaCalendarDate(daysFromToday = 0) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(new Date()).reduce((values, part) => {
+        if (part.type !== 'literal') values[part.type] = part.value;
+        return values;
+    }, {});
+    const calendarDay = new Date(Date.UTC(
+        Number(parts.year), Number(parts.month) - 1, Number(parts.day) + daysFromToday
+    ));
+    return calendarDay.toISOString().slice(0, 10);
 }
 
 function formatDateForDisplay(dateStr) {
-    const date = new Date(dateStr + 'T00:00:00'); // Add time to avoid timezone issues
+    const date = new Date(dateStr + 'T12:00:00Z');
     const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
     const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
     
-    const dayName = days[date.getDay()];
-    const monthName = months[date.getMonth()];
-    const dayNum = date.getDate();
+    const dayName = days[date.getUTCDay()];
+    const monthName = months[date.getUTCMonth()];
+    const dayNum = date.getUTCDate();
     
     return `${dayName}, ${monthName} ${dayNum}`;
 }
@@ -119,9 +136,7 @@ function formatDateForDisplay(dateStr) {
 function getNextDates(count = 7) {
     const dates = [];
     for (let i = 0; i < count; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() + i);
-        dates.push(date.toISOString().split('T')[0]);
+        dates.push(getIndiaCalendarDate(i));
     }
     return dates;
 }
@@ -251,9 +266,6 @@ async function loadShows() {
             console.log(`      → ${theatre.name}: ${theatre.shows.length} shows`);
         });
         
-        // Get current date and time for expiry checking
-        const currentDateTime = new Date();
-        
         // Render theatres
         container.innerHTML = data.theatres.map(theatre => `
             <div class="theatre-card">
@@ -261,9 +273,10 @@ async function loadShows() {
                 <div class="theatre-location">${theatre.address}</div>
                 <div class="showtimes">
                     ${theatre.shows.map(show => {
-                        // Check if show has expired
-                        const showDateTime = new Date(`${show.show_date}T${show.time}:00`);
-                        const isExpired = currentDateTime >= showDateTime;
+                        // The API excludes started shows using India business
+                        // time; it remains authoritative if a show starts after
+                        // this response but before the user chooses it.
+                        const isExpired = false;
                         const isSoldOut = show.available_seats === 0;
                         const isDisabled = isExpired || isSoldOut;
                         

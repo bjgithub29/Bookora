@@ -14,9 +14,9 @@ was actually bound to.
 
 Run from the project root:
 
-    python -m unittest test_authorization -v
+    python -m unittest tests.test_authorization -v
     # or, if you use pytest:
-    pytest test_authorization.py -v
+    pytest tests/test_authorization.py -v
 """
 import unittest
 from unittest.mock import patch
@@ -33,8 +33,9 @@ class FakeCursor:
     to exercise the authorization logic without a real database.
     """
 
-    def __init__(self, dictionary=False):
+    def __init__(self, dictionary=False, buffered=False):
         self.dictionary = dictionary
+        self.buffered = buffered
         self.lastrowid = 4242
         self.calls = []          # [(sql, params), ...]
         self._last_sql = ""
@@ -88,8 +89,12 @@ class FakeConn:
     def __init__(self):
         self.cursors = []
 
-    def cursor(self, dictionary=False):
-        c = FakeCursor(dictionary=dictionary)
+    def cursor(self, dictionary=False, buffered=False):
+        # buffered is accepted because the real cursors are opened with
+        # buffered=True (pooled connections must never be returned holding unread
+        # results). The flag changes nothing for this stand-in, which already
+        # hands back fully-materialised canned rows.
+        c = FakeCursor(dictionary=dictionary, buffered=buffered)
         self.cursors.append(c)
         return c
 

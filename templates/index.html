@@ -790,56 +790,281 @@
         
         /* ==========================================
            RESPONSIVE DESIGN
+
+           NOTE: this page carries its own copy of the
+           design system above, which shadows
+           static/styles.css. The breakpoints below
+           mirror the shared ones in styles.css for the
+           selectors that copy declares.
+
+           Breakpoints:
+             >= 1200px   desktop (base rules above)
+             992-1199px  small desktop
+             768-991px   tablet - hero becomes a swipe row
+             576-767px   large phone
+             <= 575px    phone, down to 320px
            ========================================== */
-        
-        @media (max-width: 1024px) {
-            .movie-banner {
-                width: 320px;
-                height: 420px;
+
+        /* Fluid banner text: long titles no longer clip the card */
+        .banner-image {
+            height: 58%;
+        }
+
+        .banner-content {
+            height: 42%;
+            overflow: hidden;
+            padding: clamp(0.9rem, 1.1vw, 1.5rem);
+        }
+
+        .banner-title {
+            font-size: clamp(1.05rem, 0.55vw + 0.75rem, 1.4rem);
+            margin-bottom: 0.35rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .banner-subtitle {
+            font-size: clamp(0.72rem, 0.25vw + 0.6rem, 0.85rem);
+            margin-bottom: 0.6rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Cursor-driven hero: fluid width + spread so the
+           outer banners never spill out of the wrapper */
+        @media (min-width: 992px) {
+            .banners-stack {
+                --banner-w: clamp(260px, 20vw, 320px);
+                --banner-spread: clamp(150px, 16.5vw, 250px);
             }
-            
+
+            .movie-banner {
+                width: var(--banner-w);
+                height: calc(var(--banner-w) * 1.3125);
+            }
+
+            .movie-banner:nth-child(1) { left: calc(50% - var(--banner-w) / 2 - var(--banner-spread) * 2); }
+            .movie-banner:nth-child(2) { left: calc(50% - var(--banner-w) / 2 - var(--banner-spread)); }
+            .movie-banner:nth-child(3) { left: calc(50% - var(--banner-w) / 2); }
+            .movie-banner:nth-child(4) { left: calc(50% - var(--banner-w) / 2 + var(--banner-spread)); }
+            .movie-banner:nth-child(5) { left: calc(50% - var(--banner-w) / 2 + var(--banner-spread) * 2); }
+
             .banners-wrapper {
-                height: 400px;
+                height: calc(clamp(260px, 20vw, 320px) * 1.3125 + 40px);
             }
         }
-        
-        @media (max-width: 768px) {
+
+        @media (max-width: 1199.98px) {
+            .movie-poster {
+                height: 250px;
+            }
+
             .hero-title h1 {
-                font-size: 2rem;
+                font-size: 2.5rem;
             }
-            
-            .movie-banner {
-                position: relative !important;
-                left: auto !important;
-                right: auto !important;
-                margin: 0 auto 1rem;
-                width: 90%;
-                max-width: 350px;
+        }
+
+        /* Tablet - a cursor hero is meaningless on touch,
+           so the banners become a horizontal swipe row */
+        @media (max-width: 991.98px) {
+            .hero-section {
+                margin-top: 68px;
+                min-height: 0;
+                padding: 2.5rem 0 3.5rem;
             }
-            
-            .banners-stack {
-                flex-direction: column;
-                height: auto;
+
+            .hero-container {
+                padding: 0 1.5rem;
             }
-            
+
+            .hero-title {
+                margin-bottom: 2rem;
+            }
+
+            .hero-title h1 {
+                font-size: 2.25rem;
+            }
+
             .banners-wrapper {
                 height: auto;
+                display: block;
+                perspective: none;
+                cursor: default;
+                margin: 0 -1.5rem;
             }
-            
+
+            .banners-stack {
+                flex-direction: row;
+                align-items: stretch;
+                justify-content: flex-start;
+                height: auto;
+                max-width: none;
+                gap: 1rem;
+                padding: 0.5rem 1.5rem 1.5rem;
+                overflow-x: auto;
+                overflow-y: hidden;
+                transform-style: flat;
+                scroll-snap-type: x mandatory;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+
+            .banners-stack::-webkit-scrollbar {
+                display: none;
+            }
+
+            /* !important: the hero script writes inline
+               transform/filter/shadow for the desktop
+               interaction; below 992px it must not apply. */
+            .movie-banner {
+                position: relative;
+                left: auto !important;
+                right: auto !important;
+                flex: 0 0 72%;
+                width: auto;
+                max-width: 300px;
+                height: 400px;
+                margin: 0;
+                scroll-snap-align: center;
+                transform: none !important;
+                filter: none !important;
+                opacity: 1 !important;
+                box-shadow: 0 6px 24px var(--shadow-soft) !important;
+            }
+
+            .content-section {
+                padding: 3rem 1.5rem;
+            }
+
+            .movie-section {
+                margin-bottom: 3rem;
+            }
+
+            /* Posters keep their 2:3 ratio instead of a fixed height */
+            .movie-poster {
+                height: auto;
+                aspect-ratio: 2 / 3;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .hero-container {
+                padding: 0 1rem;
+            }
+
+            .hero-title h1 {
+                font-size: 1.85rem;
+                letter-spacing: -0.5px;
+            }
+
+            .hero-title p {
+                font-size: 0.95rem;
+            }
+
+            .banners-wrapper {
+                margin: 0 -1rem;
+            }
+
+            .banners-stack {
+                gap: 0.85rem;
+                padding: 0.5rem 1rem 1.25rem;
+            }
+
+            .movie-banner {
+                flex: 0 0 78%;
+                height: 370px;
+            }
+
             .filter-content {
                 flex-direction: column;
+                padding: 0 1rem;
             }
-            
+
+            .filter-group,
             .filter-group select {
                 width: 100%;
             }
-            
-            .section-header {
+
+            .content-section {
+                padding: 2.5rem 1rem;
+            }
+
+            .movie-section {
+                margin-bottom: 2.5rem;
+            }
+
+            .promo-strip {
+                padding: 2rem 1.25rem;
+                margin: 2rem 1rem;
+            }
+
+            .promo-title {
                 font-size: 1.5rem;
             }
-            
-            .movie-card {
-                flex: 0 0 160px;
+
+            .promo-description {
+                font-size: 0.95rem;
+            }
+
+            .promo-code {
+                font-size: 1.05rem;
+                padding: 0.7rem 1.25rem;
+                letter-spacing: 0.5px;
+            }
+
+            .footer {
+                padding: 2.5rem 1.25rem 1.5rem;
+            }
+
+            .footer-content {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1.75rem;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .hero-title h1 {
+                font-size: 1.6rem;
+            }
+
+            .movie-banner {
+                flex: 0 0 84%;
+                height: 340px;
+            }
+
+            .content-section {
+                padding: 2rem 0.75rem;
+            }
+
+            .movie-info {
+                padding: 0.85rem;
+            }
+
+            .movie-title {
+                font-size: 0.9rem;
+            }
+
+            .movie-language {
+                font-size: 0.75rem;
+            }
+
+            .promo-strip {
+                padding: 1.75rem 1rem;
+                margin: 1.5rem 0.75rem;
+            }
+
+            .promo-code {
+                font-size: 0.95rem;
+                padding: 0.6rem 1rem;
+                word-break: break-word;
+            }
+
+            .footer {
+                padding: 2rem 1rem 1.25rem;
             }
         }
     </style>
@@ -1440,8 +1665,10 @@
          * - Anywhere in between → proportional float value
          */
         function handleMouseMove(e) {
-            // Only on desktop
-            if (window.innerWidth < 768) return;
+            // Desktop only. 992px matches the CSS breakpoint where the hero
+            // becomes a static swipe row - below it the animation would keep
+            // writing inline transforms that fight the stylesheet.
+            if (window.innerWidth < 992) return;
             
             mouseInside = true;
             

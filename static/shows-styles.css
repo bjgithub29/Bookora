@@ -484,17 +484,54 @@
 
 /* ==========================================
    RESPONSIVE DESIGN
+
+   Breakpoints mirror the shared ladder in styles.css:
+     992-1199px  small desktop
+     768-991px   tablet (Bootstrap collapses the navbar here)
+     576-767px   large phone
+     <= 575px    phone, down to 320px
    ========================================== */
 
-@media (max-width: 992px) {
+@media (max-width: 991.98px) {
     .navbar-auth {
         margin-left: 0 !important;
         margin-top: 1rem;
         justify-content: flex-start;
     }
+
+    /* the collapsed navbar is shorter than the desktop one */
+    .shows-main-container {
+        margin-top: 72px;
+        padding: 2.5rem 1.5rem;
+    }
+
+    .shows-movie-header {
+        margin-bottom: 2.25rem;
+    }
+
+    .shows-movie-title {
+        font-size: 2.15rem;
+    }
+
+    .shows-date-section {
+        margin-bottom: 2.25rem;
+    }
+
+    .showtime-btn {
+        min-width: 120px;
+        padding: 0.9rem 1.25rem;
+    }
+
+    /* anchored to the right, the dropdown ran off the collapsed navbar */
+    .navbar-bookora .profile-dropdown {
+        left: 0;
+        right: auto;
+        min-width: 0;
+        width: min(280px, calc(100vw - 3rem));
+    }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
     .shows-main-container {
         padding: 2rem 1rem;
     }
@@ -513,21 +550,37 @@
         font-size: 1.25rem;
     }
 
+    /* Stacking seven full-width date pills buried the showtimes below them.
+       Same swipe-row technique the home page uses for its movie rows. */
     .shows-date-buttons {
-        flex-direction: column;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        margin: 0 -1rem;
+        padding: 0.35rem 1rem 0.6rem;
+    }
+
+    .shows-date-buttons::-webkit-scrollbar {
+        display: none;
     }
 
     .date-btn {
-        width: 100%;
-        text-align: center;
+        flex: 0 0 auto;
+        scroll-snap-align: start;
     }
 
+    /* two per row instead of one full-width button per showtime */
     .showtimes {
-        flex-direction: column;
+        gap: 0.75rem;
     }
 
     .showtime-btn {
-        width: 100%;
+        flex: 1 1 auto;
+        min-width: 110px;
+        max-width: 100%;
     }
 
     .theatre-card {
@@ -539,7 +592,7 @@
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 575.98px) {
     .shows-movie-title {
         font-size: 1.75rem;
     }
@@ -554,7 +607,38 @@
     }
 
     .showtime-btn {
-        min-width: 120px;
-        padding: 0.875rem 1.25rem;
+        min-width: 100px;
+        padding: 0.875rem 1rem;
+        font-size: 1.05rem;
+    }
+}
+
+@media (max-width: 400px) {
+    .shows-main-container {
+        padding: 1.75rem 0.85rem;
+    }
+
+    .shows-date-buttons {
+        margin: 0 -0.85rem;
+        padding: 0.35rem 0.85rem 0.6rem;
+    }
+
+    .theatre-card {
+        padding: 1.1rem 0.9rem;
+    }
+
+    .showtimes {
+        gap: 0.6rem;
+    }
+
+    .showtime-btn {
+        min-width: 0;
+        flex: 1 1 45%;
+        padding: 0.8rem 0.6rem;
+        font-size: 1rem;
+    }
+
+    .seats-info {
+        font-size: 0.75rem;
     }
 }

@@ -1,4 +1,10 @@
 Flask==3.0.0
-flask-cors==4.0.0
 mysql-connector-python==8.2.0
 python-dotenv==1.0.0
+# IANA timezone database for Windows/minimal containers. The show-maintenance
+# business clock is explicitly Asia/Kolkata and must not depend on host timezone.
+tzdata==2025.2
+# Production WSGI server, used by the Procfile. It installs fine on Windows but
+# cannot run there (it needs the POSIX fcntl module), so keep using app.py /
+# python app.py for local development.
+gunicorn==23.0.0

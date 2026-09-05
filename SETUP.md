@@ -1,204 +1,205 @@
 # Bookora — Setup & Run Guide
 
-How to get Bookora running on your own machine, in order. Follow the steps top to bottom the first time.
+This guide walks you through setting up and running Bookora on your local machine for development and testing.
 
-Bookora is a Flask + MySQL movie‑ticket booking app. MySQL is provided by **XAMPP**, the backend is **Flask (Python)**, and the frontend is server‑rendered HTML/CSS/JS. Email‑OTP login uses **Gmail SMTP**.
-
----
-
-## 0. Prerequisites
-
-Install these once before you start:
-
-- **XAMPP** — gives you MySQL (the database) and phpMyAdmin (a web UI to run SQL). Download: https://www.apachefriends.org
-- **Python 3.10+** with `pip` — check with `python --version` and `pip --version`
-- **A Gmail account with an App Password** — required so the app can send login OTP emails. Create one at https://myaccount.google.com/apppasswords (this is a 16‑character app password, **not** your normal Gmail password). You need 2‑Step Verification enabled on the Google account first.
-
-> On Windows, if `python` doesn't work, try `py` instead (e.g. `py app.py`).
+Bookora is a full-stack cinema ticketing application built with a **Flask** backend, a **MySQL/MariaDB** database, and a **server-rendered** responsive frontend. Authentication uses passwordless **Email-OTP** via SMTP.
 
 ---
 
-## 1. Open the project folder
+## 1. Prerequisites
 
-Clone the repository (or download and unzip it), then open a terminal (Command Prompt / PowerShell) **in the project root** — the folder that contains `app.py`, `requirements.txt`, and `database_schema.sql`.
+Install and verify these tools before starting:
+
+- **MySQL or MariaDB** (via [XAMPP](https://www.apachefriends.org/) or standalone): Provides the relational database.
+- **Python 3.10+** with `pip`: Verify with `python --version` and `pip --version`.
+- **Gmail Account with an App Password**: Required for sending login verification OTP emails. Generate a 16-character App Password at [Google Account App Passwords](https://myaccount.google.com/apppasswords) (requires 2-Step Verification enabled).
+- **Git**: For source version control.
+
+---
+
+## 2. Project Directory & Repository Setup
+
+Clone the repository and navigate into the project root:
 
 ```bash
 git clone https://github.com/bjgithub29/Bookora.git
 cd Bookora
 ```
 
-All commands below are run from this folder.
+All commands below should be executed from the project root folder.
 
 ---
 
-## 2. Start XAMPP (MySQL + Apache)
+## 3. Local Database Initialization (XAMPP)
 
 1. Open the **XAMPP Control Panel**.
-2. Click **Start** on **MySQL**.
-3. Click **Start** on **Apache** (needed only so you can use phpMyAdmin in the next step).
+2. Start the **MySQL** module (and optionally **Apache** if you want to use phpMyAdmin).
+3. Import the canonical schema:
 
-Leave XAMPP running the whole time you use the app — the Flask backend talks to this MySQL server.
+### Option A: Using Command Line (Recommended)
+```bash
+# Windows (adjust path if XAMPP is installed elsewhere)
+"C:\xampp\mysql\bin\mysql.exe" -u root < database/database_schema.sql
 
----
+# macOS / Linux / Standalone MySQL
+mysql -u root -p < database/database_schema.sql
+```
 
-## 3. Create the database and tables (run the SQL file)
-
-This step creates the `bookora` database, all the tables, and seeds the four Ahmedabad theatres. You only need to do it **once** (or again if you want to reset the schema).
-
-**Option A — phpMyAdmin (easiest):**
-
-1. Open http://localhost/phpmyadmin in your browser.
+### Option B: Using phpMyAdmin
+1. Open `http://localhost/phpmyadmin` in your browser.
 2. Click the **Import** tab at the top.
-3. Click **Choose File** and select `database_schema.sql` from the project folder.
-4. Scroll down and click **Import / Go**.
+3. Click **Choose File** and select `database/database_schema.sql`.
+4. Click **Import / Go**.
 
-You should see a success message, and a **`bookora`** database will appear in the left sidebar with the tables `movies`, `theatres`, `shows`, `seats`, `users`, `otp_verification`, `saved_movies`, and `bookings`.
-
-**Option B — command line (if you prefer):**
-
-```bash
-"C:\xampp\mysql\bin\mysql.exe" -u root < database_schema.sql
-```
-
-> The SQL file already does `CREATE DATABASE IF NOT EXISTS bookora;` — you do **not** need to create the database by hand first.
+> `database/database_schema.sql` automatically creates the `bookora` database if it does not exist, sets up all 9 tables, establishes foreign keys, and seeds the initial Ahmedabad theatres with composite unique constraints (`UNIQUE KEY unique_theatre (name, city)`).
 
 ---
 
-## 4. Install the Python dependencies
+## 4. Python Virtual Environment & Dependencies
 
-Optional but recommended — create a virtual environment so packages stay isolated:
-
-```bash
-python -m venv venv
-venv\Scripts\activate
-```
-
-Then install the requirements:
+Create an isolated virtual environment and install the production dependencies:
 
 ```bash
+# 1. Create virtual environment
+python -m venv .venv
+
+# 2. Activate virtual environment
+# Windows (Command Prompt / PowerShell):
+.\.venv\Scripts\activate
+# macOS / Linux:
+source .venv/bin/activate
+
+# 3. Install dependencies
 pip install -r requirements.txt
 ```
 
-This installs Flask, flask‑cors, mysql‑connector‑python, and python‑dotenv.
+This installs Flask 3.0, mysql-connector-python 8.2, python-dotenv, tzdata (for timezone reliability), and Gunicorn.
 
 ---
 
-## 5. Configure your environment (`.env`)
+## 5. Configure Environment Variables (`.env`)
 
-The app reads its secrets and settings from a `.env` file. Copy the provided template and fill in your values:
+Copy the provided `.env.example` template:
 
 ```bash
+# Windows
 copy .env.example .env
+
+# macOS / Linux
+cp .env.example .env
 ```
 
-Open the new `.env` file and set:
+Open `.env` in a text editor and configure your local settings:
 
-- **`EMAIL_USER`** — your Gmail address
-- **`EMAIL_PASSWORD`** — your Gmail **App Password** (16 characters, no spaces)
-- **`EMAIL_FROM`** — usually the same Gmail address
-- **`SECRET_KEY`** — any long random string (generate one with `python -c "import secrets; print(secrets.token_hex(32))"`)
-- **`DB_*`** — leave as the defaults (`DB_HOST=localhost`, `DB_USER=root`, `DB_PASSWORD=` empty, `DB_NAME=bookora`) — these match a standard XAMPP install.
-- **`DEBUG`** — set to `True` for local development, `False` otherwise.
+```ini
+# Generate a secret key: python -c "import secrets; print(secrets.token_hex(32))"
+SECRET_KEY=your-random-generated-secret-key
+DEBUG=True
 
-> ⚠️ The email settings are **required** for login. Without a valid Gmail App Password, the app can't send OTP codes and you won't be able to log in.
->
-> ⚠️ Never commit `.env` to git — it holds real secrets. It's already git‑ignored.
+# Database (matches standard XAMPP defaults)
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=bookora
+
+# Email OTP Configuration (Gmail SMTP)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-16-character-app-password
+EMAIL_FROM=your-email@gmail.com
+```
+
+> **Security Note:** Never commit `.env` to Git. It is excluded by `.gitignore`.
 
 ---
 
-## 6. Seed the movies
+## 6. Run the Show-Scheduling Migration
 
-Loads the movies from `movies-data.json` into the `movies` table.
+To verify that all show-scheduling schema objects, foreign keys, and unique constraints are fully aligned with the application:
 
 ```bash
-python seed_movies.py
+python database/migrate_show_scheduling.py
 ```
 
-You should see a list of inserted movies and a total count at the end.
+This script is idempotent and safe to run on an existing database; it creates `show_schedules`, links `shows.schedule_id`, and creates the composite unique constraint `unique_show_instance (movie_id, theatre_id, show_date, show_time)`.
 
 ---
 
-## 7. Seed the shows and seats
+## 7. Development Seeding (Controlled Initialization)
 
-Generates showtimes for the next 7 days across the theatres, and creates all the seats (rows A–J, 12 seats each, all available).
+To populate movies and initial demo shows in a fresh development database, run the seed scripts in strict order:
 
 ```bash
-python seed_shows.py
+# Step 1: Load movies from movies-data.json
+python scripts/seed_movies.py
+
+# Step 2: Create initial schedule rules and generate shows/seats
+python scripts/seed_shows.py
 ```
 
-> **Order matters:** run `seed_movies.py` *before* `seed_shows.py`. Shows are generated for existing movies and theatres, so the movies must already be in the database (and the theatres came from step 3). Running shows first will produce no shows.
+### Important Seed Principles:
+- **Order Matters**: `database/database_schema.sql` $\rightarrow$ `scripts/seed_movies.py` $\rightarrow$ `scripts/seed_shows.py`.
+- **Development-Only**: Both `scripts/seed_movies.py` and `scripts/seed_shows.py` contain interactive safety prompts and will refuse to run if existing bookings are detected.
+- **Never Run in Production**: These scripts are for local demo bootstrapping only. Production environments rely on `scripts/run_show_maintenance.py` for continuous show generation.
 
 ---
 
-## 8. Run the app
+## 8. Start the Local Server
+
+Start the Flask development server:
 
 ```bash
 python app.py
 ```
 
-You'll see Flask start up and report that it's running on `http://127.0.0.1:5000`.
+The application will start at `http://localhost:5000` (or the port specified by `PORT` in `.env`).
 
 ---
 
-## 9. Open it in your browser
+## 9. Running the Automated Test Suite
 
-Go to:
-
-```
-http://localhost:5000
-```
-
-Then walk through the flow: **Home → pick a movie → Shows → choose date/time → select seats → log in with Email OTP → confirm booking → My Bookings → (cancel if you want) → Profile / Saved Movies.**
-
-When logging in, enter your email, check your inbox (and spam) for the 6‑digit OTP, and complete your profile the first time.
-
----
-
-## Quick reference (after first‑time setup)
-
-Once everything is installed and seeded, a normal start is just:
+Run the full non-destructive unit test suite:
 
 ```bash
-# 1. Start MySQL in the XAMPP Control Panel, then:
-cd bookora
-venv\Scripts\activate        # if you made a virtual environment
-python app.py                # then open http://localhost:5000
+python -m unittest discover -s tests -v
+# Or run specific test modules:
+python -m unittest tests.test_schedule_management tests.test_show_maintenance tests.test_show_availability tests.test_authorization -v
 ```
 
-To reset the show schedule with fresh dates later, re‑run `python seed_shows.py`.
+### Verified Test Coverage:
+- `test_schedule_management`: 23 tests (validation, overlap algorithms, weekday masks)
+- `test_show_maintenance`: 12 tests (rolling window generation, idempotency, seat layouts)
+- `test_show_availability`: 3 tests (past show filtering, time cutoff enforcement)
+- `test_authorization`: 12 tests (session-based authentication, IDOR protection, CSRF/session scoping)
+- **Result: 50 tests pass (0 failures, 0 errors)**.
 
 ---
 
-## Troubleshooting
+## 10. Local vs. Production Overview
 
-**`No module named 'flask'`** — Dependencies aren't installed (or your virtual environment isn't activated). Run `venv\Scripts\activate` then `pip install -r requirements.txt`.
-
-**`Access denied for user 'root'@'localhost'`** — Your MySQL root user has a password but `.env` expects none (or vice‑versa). On a default XAMPP install the root password is empty, so `DB_PASSWORD=` should be blank. Match `.env` to your actual MySQL setup.
-
-**`Can't connect to MySQL server` / `2003`** — MySQL isn't running. Start it in the XAMPP Control Panel. If the port is taken, another MySQL/service may be using port 3306.
-
-**`Unknown database 'bookora'`** — You skipped step 3. Import `database_schema.sql` first.
-
-**No shows or seats appear in the app** — You ran the seeds out of order or not at all. Run `seed_movies.py`, then `seed_shows.py`.
-
-**OTP email never arrives** — `EMAIL_USER`/`EMAIL_PASSWORD` are missing or wrong in `.env`. Use a Gmail **App Password**, not your login password, and check the spam folder.
-
-**`Port 5000 is in use`** — Something else is using the port. Add a line like `PORT=5001` to `.env` and open `http://localhost:5001` instead.
-
-**Re‑running seeds wiped my data** — That's expected: `seed_movies.py` clears the movies table and `seed_shows.py` clears shows and seats before regenerating. Only re‑run them when you want a fresh dataset.
+| Feature | Local Development | Cloud Production |
+| :--- | :--- | :--- |
+| **Server Engine** | `python app.py` (Flask built-in server) | `gunicorn -w 4 -b 0.0.0.0:$PORT app:app` |
+| **Database** | XAMPP MariaDB (`localhost:3306`, root/no-password) | Managed Cloud Database (MySQL 8.0+ / MariaDB 10.4+) |
+| **`DEBUG` Flag** | `True` (allows development fallbacks) | `False` (crashes if required variables/secrets are missing) |
+| **Show Generation** | Initial bootstrapping via `scripts/seed_shows.py` | Daily headless cron job via `scripts/run_show_maintenance.py` |
+| **Cookies** | Plain HTTP permitted when `DEBUG=True` | Enforced HTTPS-only (`SESSION_COOKIE_SECURE=True`) |
 
 ---
 
-## What each piece does
+## 11. Troubleshooting
 
-| File | Purpose |
-| --- | --- |
-| `app.py` | The Flask backend — all routes and API endpoints |
-| `database_schema.sql` | Creates the `bookora` database, tables, and seeds theatres |
-| `movies-data.json` | Source movie data read by the movie seeder |
-| `seed_movies.py` | Loads movies into the database |
-| `seed_shows.py` | Generates 7 days of shows + all seats |
-| `.env.example` | Template for your local `.env` (copy and fill in) |
-| `requirements.txt` | Python dependencies |
-| `templates/` | HTML pages | 
-| `static/` | CSS, JavaScript, images |
+- **`Access denied for user 'root'@'localhost'`**:
+  Your MySQL root account has a password or `.env` has an incorrect password. For standard XAMPP, `DB_PASSWORD=` should be blank.
+- **`Can't connect to MySQL server` / Error 2003**:
+  MySQL is not running. Ensure the MySQL module is active in the XAMPP Control Panel.
+- **`Unknown database 'bookora'`**:
+  You skipped schema initialization. Import `database/database_schema.sql` first.
+- **OTP Email Fails or Times Out**:
+  Ensure you are using a 16-character Gmail **App Password** (not your Google account password) and that outbound port 587 is not blocked by local firewall software.
+- **Port 5000 is in use**:
+  Set `PORT=5001` in `.env` and navigate to `http://localhost:5001`.
+- **Database Connection Pool Exhaustion**:
+  Ensure `DB_POOL_SIZE` is sized properly relative to your database `max_connections`. The default is 5 connections per process.

@@ -39,23 +39,59 @@ CREATE TABLE IF NOT EXISTS theatres (
     city VARCHAR(100) NOT NULL,
     address VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_theatre (name, city),
     INDEX idx_city (city)
 );
 
 -- ============================================
--- SHOWS TABLE
+-- RECURRING SHOW SCHEDULES (operator-managed source of truth)
+-- `days_of_week` is Monday through Sunday, where 1 means the show runs.
+-- Deactivate a schedule instead of deleting it so generated historical shows
+-- retain their provenance and no booked show can be removed accidentally.
+-- ============================================
+CREATE TABLE IF NOT EXISTS show_schedules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    movie_id INT NOT NULL,
+    theatre_id INT NOT NULL,
+    show_time TIME NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NULL,
+    days_of_week CHAR(7) NOT NULL DEFAULT '1111111',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_show_schedules_movie FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_show_schedules_theatre FOREIGN KEY (theatre_id) REFERENCES theatres(id) ON DELETE RESTRICT,
+    CONSTRAINT chk_show_schedule_dates CHECK (end_date IS NULL OR end_date >= start_date),
+    -- Enforced by modern MySQL/MariaDB; schedule_management.py remains the
+    -- authoritative validator for older engines that parse CHECK as a no-op.
+    CONSTRAINT chk_show_schedule_weekdays CHECK (CHAR_LENGTH(days_of_week) = 7 AND days_of_week REGEXP '^[01]{7}$'),
+    INDEX idx_schedule_generation (is_active, start_date, end_date),
+    INDEX idx_schedule_identity (movie_id, theatre_id, show_time, is_active),
+    INDEX idx_schedule_movie (movie_id),
+    INDEX idx_schedule_theatre (theatre_id)
+);
+
+-- ============================================
+-- GENERATED SHOW INSTANCES
 -- ============================================
 CREATE TABLE IF NOT EXISTS shows (
     id INT AUTO_INCREMENT PRIMARY KEY,
     movie_id INT NOT NULL,
     theatre_id INT NOT NULL,
+    schedule_id INT NULL,
     show_date DATE NOT NULL,
     show_time TIME NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE,
     FOREIGN KEY (theatre_id) REFERENCES theatres(id) ON DELETE CASCADE,
+    CONSTRAINT fk_shows_schedule FOREIGN KEY (schedule_id) REFERENCES show_schedules(id) ON DELETE RESTRICT,
+    -- A venue has no separate screen model yet, so this is the real identity
+    -- of an instance in the current schema and the duplicate-safety guard.
+    UNIQUE KEY unique_show_instance (movie_id, theatre_id, show_date, show_time),
     INDEX idx_movie_date (movie_id, show_date),
-    INDEX idx_theatre_date (theatre_id, show_date)
+    INDEX idx_theatre_date (theatre_id, show_date),
+    INDEX idx_schedule_date (schedule_id, show_date)
 );
 
 -- ============================================

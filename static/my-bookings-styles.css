@@ -44,10 +44,11 @@ body {
 
 .bookings-header h1 {
     font-family: 'Playfair Display', serif;
-    font-size: 36px;
+    font-size: clamp(1.6rem, 2.2vw + 0.6rem, 2.25rem);
     font-weight: 600;
     color: #2a2520;
     margin-bottom: 8px;
+    overflow-wrap: break-word;
 }
 
 .bookings-header p {
@@ -192,7 +193,8 @@ body {
 
 .booking-card-content {
     display: grid;
-    grid-template-columns: 140px 1fr;
+    /* minmax(0,...) so long titles/seat lists can't push the card wider */
+    grid-template-columns: 140px minmax(0, 1fr);
     gap: 24px;
 }
 
@@ -222,11 +224,13 @@ body {
     font-weight: 600;
     color: #2a2520;
     margin: 0;
+    overflow-wrap: break-word;
 }
 
 .booking-info {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    /* min(250px, 100%) keeps the 250px track from overflowing a narrow card */
+    grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
     gap: 12px;
 }
 
@@ -236,10 +240,13 @@ body {
     gap: 10px;
     font-size: 14px;
     color: #6b6560;
+    overflow-wrap: break-word;
+    min-width: 0;
 }
 
 .info-item i {
     width: 16px;
+    flex-shrink: 0;
     color: #d4a59a;
     font-size: 14px;
 }
@@ -272,117 +279,9 @@ body {
     color: #2a2520;
 }
 
-.btn-cancel-booking {
-    padding: 12px 24px;
-    background: #ffffff;
-    color: #d4a59a;
-    border: 1.5px solid #d4a59a;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.btn-cancel-booking:hover:not(:disabled) {
-    background: #d4a59a;
-    color: #ffffff;
-    transform: translateY(-1px);
-}
-
-.btn-cancel-booking:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.btn-cancel-booking i {
-    font-size: 13px;
-}
-
-.cancelled-badge,
-.past-show-badge {
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.cancelled-badge {
-    background: #ffebee;
-    color: #c62828;
-}
-
-.past-show-badge {
-    background: #e8f5e9;
-    color: #2e7d32;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .bookings-container-main {
-        margin-top: 80px;
-    }
-    
-    .bookings-header h1 {
-        font-size: 28px;
-    }
-    
-    .booking-card {
-        padding: 20px;
-    }
-    
-    .booking-card-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-    
-    .booking-card-content {
-        grid-template-columns: 1fr;
-    }
-    
-    .booking-poster {
-        width: 100%;
-        height: 300px;
-    }
-    
-    .movie-title {
-        font-size: 20px;
-    }
-    
-    .booking-info {
-        grid-template-columns: 1fr;
-    }
-    
-    .booking-footer {
-        flex-direction: column;
-        gap: 16px;
-        align-items: stretch;
-    }
-    
-    .btn-cancel-booking,
-    .cancelled-badge,
-    .past-show-badge {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .price-value {
-        font-size: 20px;
-    }
-}
-
-@media (min-width: 769px) and (max-width: 1024px) {
-    .booking-info {
-        grid-template-columns: 1fr;
-    }
-}
+/* Responsive rules live at the end of this file - media queries carry no extra
+   specificity, so a block placed here would lose to the plain rules below it
+   (.booking-card, .saved-movies-grid). See "RESPONSIVE DESIGN" at the bottom. */
 
 /* ==========================================
    BOOKING DETAILS MODAL
@@ -423,6 +322,7 @@ body {
     font-weight: 500;
     text-align: right;
     max-width: 60%;
+    overflow-wrap: break-word;
 }
 
 .detail-value.price {
@@ -486,7 +386,7 @@ body {
 
 .saved-movies-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
     gap: 2rem;
     padding: 1rem 0;
 }
@@ -521,101 +421,183 @@ body {
     font-weight: 600;
 }
 
-.saved-movie-card {
-    background: #ffffff;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 2px 12px rgba(42, 37, 32, 0.08);
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
+/* ==========================================
+   RESPONSIVE DESIGN
+   (shared by my-bookings.html and saved-movies.html)
 
-.saved-movie-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 8px 24px rgba(212, 165, 154, 0.2);
-}
+   Breakpoints mirror the shared ladder in styles.css:
+     992-1199px  small desktop
+     768-991px   tablet (Bootstrap collapses the navbar here)
+     576-767px   large phone
+     <= 575px    phone, down to 320px
+   ========================================== */
 
-.saved-movie-poster {
-    position: relative;
-    width: 100%;
-    padding-top: 150%; /* 2:3 aspect ratio for movie posters */
-    overflow: hidden;
-    background: #f5f2ed;
-}
+@media (max-width: 991.98px) {
+    /* collapsed navbar is shorter, and its items stack instead of sitting
+       in a row - the 1.5rem left gutter only made sense horizontally */
+    .bookings-container-main {
+        margin-top: 78px;
+    }
 
-.saved-movie-poster img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
+    .nav-item.profile-section,
+    .nav-item.auth-buttons {
+        margin-left: 0;
+        margin-top: 0.75rem;
+    }
 
-.saved-movie-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(42, 37, 32, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
+    .bookings-header {
+        margin-bottom: 2.25rem;
+    }
 
-.saved-movie-card:hover .saved-movie-overlay {
-    opacity: 1;
-}
+    .booking-card-content {
+        grid-template-columns: 120px minmax(0, 1fr);
+        gap: 20px;
+    }
 
-.saved-movie-overlay i {
-    font-size: 3rem;
-    color: #ffffff;
-}
+    .booking-poster {
+        width: 120px;
+        height: auto;
+        aspect-ratio: 2 / 3;
+    }
 
-.saved-movie-info {
-    padding: 1rem;
-}
+    .booking-info {
+        grid-template-columns: minmax(0, 1fr);
+    }
 
-.saved-movie-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #2a2520;
-    margin-bottom: 0.5rem;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.saved-movie-meta {
-    display: flex;
-    gap: 1rem;
-    font-size: 0.85rem;
-    color: #6b6560;
-    margin-bottom: 0.5rem;
-}
-
-.saved-movie-meta i {
-    color: #d4a59a;
-    margin-right: 0.25rem;
-}
-
-.saved-movie-genre {
-    font-size: 0.85rem;
-    color: #6b6560;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-@media (max-width: 768px) {
     .saved-movies-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .bookings-container-main {
+        margin: 78px auto 40px;
+        padding: 0 1rem;
+    }
+
+    .booking-card {
+        padding: 20px;
+    }
+
+    .booking-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .booking-card-content {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* was width:100% + height:300px, which stretched every poster into a
+       cropped letterbox; a centred 2:3 card keeps the artwork intact */
+    .booking-poster {
+        width: 100%;
+        max-width: 150px;
+        height: auto;
+        aspect-ratio: 2 / 3;
+        margin: 0 auto;
+    }
+
+    .movie-title {
+        font-size: 20px;
+    }
+
+    .booking-footer {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    .price-value {
+        font-size: 20px;
+    }
+
+    .booking-details-content {
+        margin: 1.25rem 0;
+        padding: 1rem;
+        max-height: 50vh;
+    }
+
+    .booking-detail-item {
+        gap: 0.75rem;
+    }
+
+    .detail-label,
+    .detail-value {
+        font-size: 0.875rem;
+    }
+
+    .detail-value {
+        max-width: 60%;
+    }
+
+    /* stacked so the destructive action isn't a 100px-wide sliver */
+    .booking-actions-in-modal {
+        flex-direction: column;
+    }
+
+    .btn-cancel-in-modal {
+        width: 100%;
+        min-height: 48px;
+    }
+
+    .saved-movies-grid {
+        gap: 1.25rem;
+        padding: 0.5rem 0;
+    }
+}
+
+@media (max-width: 575.98px) {
+    /* auto-fill dropped to a single full-width poster below ~370px;
+       two fixed columns keep the grid reading as a grid */
+    .saved-movies-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 1rem;
+    }
+
+    .booking-status {
+        font-size: 11px;
+    }
+
+    .no-bookings-state,
+    .loading-state {
+        padding: 3rem 1rem;
+    }
+
+    .no-bookings-state i {
+        font-size: 48px;
+    }
+}
+
+@media (max-width: 400px) {
+    .bookings-container-main {
+        padding: 0 0.85rem;
+    }
+
+    .booking-card {
+        padding: 1rem;
+        border-radius: 12px;
+    }
+
+    .booking-poster {
+        max-width: 130px;
+    }
+
+    .movie-title {
+        font-size: 18px;
+    }
+
+    .info-item {
+        font-size: 13px;
+    }
+
+    .saved-movies-grid {
+        gap: 0.75rem;
+    }
+
+    .seat-detail-row {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.5rem;
     }
 }

@@ -9,8 +9,9 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background: #fafafa;
+    /* same stack as the shared design system in styles.css */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #faf8f5;
     color: #2a2520;
 }
 
@@ -104,10 +105,12 @@ body {
 
 .navbar-movie-title-scrolled span {
     display: inline-block;
-    max-width: 500px;
+    /* fixed 500px pushed the scrolled Book Now button off-screen on laptops */
+    max-width: min(500px, 32vw);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    vertical-align: middle;
 }
 
 /* Navbar Book Now Button (Scrolled State Only) */
@@ -232,8 +235,12 @@ body {
     position: relative;
     z-index: 2;
     display: grid;
-    grid-template-columns: 1fr 250px;
+    /* The right-hand action zone (.banner-zone-right-actions) is not rendered
+       by movie-details.html, so a second 250px track only reserved dead space
+       and squeezed the title/metadata. Kept as a single track. */
+    grid-template-columns: 1fr;
     gap: 3rem;
+    width: 100%;
     max-width: 1200px;
     margin: 0 auto;
     padding: 3rem 2rem;
@@ -245,8 +252,9 @@ body {
    ========================================== */
 .banner-zone-left-content {
     display: grid;
-    grid-template-columns: 240px 1fr;
-    gap: 2.5rem;
+    /* poster shrinks with the viewport instead of holding 240px */
+    grid-template-columns: clamp(160px, 18vw, 240px) minmax(0, 1fr);
+    gap: clamp(1.5rem, 3vw, 2.5rem);
     align-items: start;
 }
 
@@ -319,11 +327,12 @@ body {
 
 .banner-movie-title {
     font-family: 'Playfair Display', serif;
-    font-size: 2.75rem;
+    font-size: clamp(1.75rem, 2.4vw + 0.9rem, 2.75rem);
     font-weight: 700;
     margin: 0;
     line-height: 1.2;
     color: white;
+    overflow-wrap: break-word;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
@@ -736,77 +745,6 @@ body {
     color: #667eea;
 }
 
-/* ==========================================
-   RESPONSIVE DESIGN - MOBILE OPTIMIZED
-   ========================================== */
-@media (max-width: 768px) {
-    /* 2-Zone Banner becomes single column on mobile */
-    .banner-2zone-layout {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-        padding: 2rem 1rem;
-    }
-    
-    .banner-zone-left-content {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-    }
-    
-    .banner-poster-card {
-        max-width: 200px;
-        margin: 0 auto;
-    }
-    
-    .banner-zone-right-actions {
-        justify-content: center;
-    }
-    
-    .banner-action-card {
-        flex-direction: row;
-        gap: 1rem;
-        width: 100%;
-        max-width: 400px;
-    }
-    
-    .action-btn {
-        flex: 1;
-    }
-    
-    .banner-movie-title {
-        font-size: 2rem;
-    }
-    
-    .banner-cta-book {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .details-hero {
-        min-height: auto;
-    }
-    
-    .details-info {
-        max-width: 100%;
-    }
-    
-    .info-row {
-        grid-template-columns: 1fr;
-        gap: 0.5rem;
-    }
-    
-    .action-buttons {
-        flex-direction: column;
-    }
-    
-    .navbar-book-btn {
-        padding: 0.6rem 1.5rem;
-        font-size: 0.85rem;
-    }
-    
-    .navbar-city-selector {
-        display: none; /* Hide on mobile to save space */
-    }
-}
 
 /* ==========================================
    TOAST NOTIFICATIONS
@@ -917,7 +855,8 @@ body {
 
 .cast-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    /* 180px + .info-section's 2.5rem padding overflowed small phones */
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 1.5rem;
     justify-items: center;
 }
@@ -995,23 +934,276 @@ body {
     box-shadow: 0 6px 18px rgba(212, 165, 154, 0.3);
 }
 
-@media (max-width: 768px) {
+/* (the second, duplicate `@media (max-width: 768px)` block that used to live
+   here was folded into the ladder above so there is one breakpoint per width) */
+/* ==========================================
+   RESPONSIVE DESIGN
+
+   Breakpoints mirror the shared ladder in styles.css:
+     >= 1200px   desktop (base rules above)
+     992-1199px  small desktop
+     768-991px   tablet (Bootstrap collapses the navbar here)
+     576-767px   large phone
+     <= 575px    phone, down to 320px
+   ========================================== */
+
+/* ------------------------------------------
+   Small desktop / large tablet - nothing used
+   to cover 769-1023px at all
+   ------------------------------------------ */
+
+@media (max-width: 1199.98px) {
+    .banner-2zone-layout {
+        gap: 2rem;
+        padding: 2.75rem 1.5rem;
+    }
+
+    .details-content {
+        padding: 2.5rem 1.5rem;
+    }
+
+    .navbar-movie-title-scrolled span {
+        max-width: min(500px, 40vw);
+    }
+}
+
+@media (max-width: 991.98px) {
+    /* collapsed navbar is shorter than the desktop one */
+    .details-hero {
+        margin-top: 68px;
+        min-height: 380px;
+    }
+
+    .banner-zone-left-content {
+        grid-template-columns: clamp(150px, 24vw, 200px) minmax(0, 1fr);
+        gap: 1.75rem;
+    }
+
+    .banner-movie-details {
+        gap: 1rem;
+    }
+
+    .metadata-row {
+        font-size: 0.95rem;
+        gap: 0.7rem;
+    }
+
+    .banner-cta-book {
+        padding: 0.9rem 2rem;
+        font-size: 1.05rem;
+    }
+
+    .banner-cta-trailer,
+    .banner-cta-save {
+        padding: 0.9rem 1.5rem;
+        font-size: 1rem;
+    }
+
+    .navbar-movie-title-scrolled {
+        font-size: 1.15rem;
+        margin-left: 0.75rem;
+    }
+
+    /* .section-container repeats .details-content's 2rem padding, so the text
+       column lost 4rem on each side before .info-section's own padding */
+    .section-container {
+        padding: 0;
+    }
+
+    .info-section {
+        padding: 2rem;
+    }
+
+    .info-section h3 {
+        font-size: 1.55rem;
+        margin-bottom: 1.25rem;
+    }
+}
+
+/* ------------------------------------------
+   Phone - banner becomes a single column
+   ------------------------------------------ */
+
+@media (max-width: 767.98px) {
+    .details-hero {
+        min-height: auto;
+    }
+
+    .banner-2zone-layout {
+        gap: 1.5rem;
+        padding: 2rem 1rem;
+    }
+
+    .banner-zone-left-content {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .banner-poster-card {
+        max-width: 200px;
+        margin: 0 auto;
+    }
+
+    .banner-zone-right-actions {
+        justify-content: center;
+    }
+
+    .banner-action-card {
+        flex-direction: row;
+        gap: 1rem;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .action-btn {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* full-width primary CTA, secondaries share the row below it */
+    .banner-cta-group {
+        gap: 0.75rem;
+    }
+
+    .banner-cta-book {
+        flex: 1 1 100%;
+        justify-content: center;
+    }
+
+    .banner-cta-trailer,
+    .banner-cta-save {
+        flex: 1 1 45%;
+        justify-content: center;
+        padding: 0.85rem 1rem;
+        font-size: 0.95rem;
+    }
+
+    .navbar-movie-title-scrolled {
+        font-size: 1.05rem;
+    }
+
+    .navbar-movie-title-scrolled span {
+        max-width: min(500px, 52vw);
+    }
+
+    .navbar-book-btn-scrolled {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.85rem;
+    }
+
+    .details-content {
+        padding: 2rem 1rem;
+    }
+
+    .details-info {
+        max-width: 100%;
+        gap: 1.5rem;
+    }
+
+    .info-section {
+        padding: 1.5rem 1.25rem;
+    }
+
+    .info-section h3 {
+        font-size: 1.35rem;
+        margin-bottom: 1rem;
+    }
+
+    .description-text {
+        font-size: 1rem;
+    }
+
+    .cast-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 1rem;
+    }
+
+    .cast-item {
+        padding: 1rem 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    /* legacy selectors kept from the old duplicate 768px block */
     .details-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .details-poster {
         position: static;
         max-width: 300px;
         margin: 0 auto;
     }
-    
+
     .details-title {
         font-size: 2.5rem;
     }
-    
+
     .info-row {
         grid-template-columns: 1fr;
         gap: 0.5rem;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .btn-primary-bookora,
+    .btn-secondary-bookora {
+        justify-content: center;
+        font-size: 1rem;
+        padding: 0.9rem 1.5rem;
+    }
+
+    .navbar-book-btn {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.85rem;
+    }
+
+    .navbar-city-selector {
+        display: none; /* Hide on mobile to save space */
+    }
+}
+
+/* ------------------------------------------
+   Small phones (320-575px)
+   ------------------------------------------ */
+
+@media (max-width: 575.98px) {
+    .banner-2zone-layout {
+        padding: 1.75rem 0.9rem;
+    }
+
+    .banner-poster-card {
+        max-width: 170px;
+    }
+
+    .banner-cta-trailer,
+    .banner-cta-save {
+        /* two pills no longer fit side by side */
+        flex: 1 1 100%;
+    }
+
+    .details-content {
+        padding: 1.75rem 0.9rem;
+    }
+
+    .info-section {
+        padding: 1.25rem 1rem;
+        border-radius: 12px;
+    }
+
+    .cast-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .cast-item {
+        padding: 0.85rem 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .trailer-badge {
+        font-size: 0.8rem;
+        padding: 0.6rem;
     }
 }

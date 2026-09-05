@@ -14,6 +14,11 @@
     z-index: 2000;
     align-items: center;
     justify-content: center;
+    /* Short viewports (landscape phones, 320x568) can't fit the OTP screen:
+       the overlay scrolls instead of clipping the modal. */
+    padding: 1rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -28,6 +33,9 @@
     border-radius: 16px;
     width: 90%;
     max-width: 440px;
+    /* auto margins (not just the overlay's centering) so a modal taller than
+       the viewport stays fully scrollable instead of clipping at the top */
+    margin: auto;
     padding: 3rem 2.5rem 3.5rem;
     box-shadow: 0 20px 60px rgba(42, 37, 32, 0.2);
     position: relative;
@@ -668,70 +676,175 @@
 
 /* ==========================================
    MOBILE RESPONSIVE
+
+   Breakpoints mirror the shared ladder in styles.css:
+     768-991px  tablet
+     576-767px  large phone
+     <= 575px   phone, down to 320px
    ========================================== */
 
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
     .signin-modal {
         padding: 2rem;
         max-width: 90%;
     }
-    
+
+    .modal-header {
+        margin-bottom: 2rem;
+    }
+
     .modal-header h2 {
         font-size: 1.5rem;
     }
-    
+
+    /* 44px touch target */
+    .modal-close,
+    .modal-back {
+        top: 1rem;
+        width: 40px;
+        height: 40px;
+    }
+
+    .modal-close {
+        right: 1rem;
+    }
+
+    .modal-back {
+        left: 1rem;
+    }
+
     .auth-option-btn {
         padding: 0.9rem 1.2rem;
         font-size: 0.95rem;
     }
-    
+
     .otp-boxes {
         gap: 0.5rem;
     }
-    
+
+    /* Six fixed-width boxes overflow the modal below ~420px; let them shrink
+       from 50px instead (max-width keeps the desktop size as the ceiling). */
     .otp-box {
-        width: 45px;
+        flex: 1 1 0;
+        width: auto;
+        min-width: 0;
+        max-width: 50px;
         height: 50px;
         font-size: 1.3rem;
     }
-    
+
     .success-container h2 {
         font-size: 1.5rem;
     }
-    
+
     .success-icon-wrapper {
         width: 90px;
         height: 90px;
     }
-    
+
     .success-circle {
         width: 64px;
         height: 64px;
     }
-    
+
     .success-ripple {
         width: 64px;
         height: 64px;
     }
-    
+
     .success-checkmark {
         font-size: 1.7rem;
     }
-    
+
     .verifying-spinner {
         width: 70px;
         height: 70px;
     }
-    
+
     .spinner-icon {
         font-size: 1.5rem;
     }
-    
+
+    /* scoped: .btn-explore is also the empty-state button on My Bookings */
+    .success-container .btn-explore {
+        min-width: 0;
+        width: 100%;
+    }
+
     .logout-toast {
         bottom: 20px;
         right: 20px;
         left: 20px;
-        max-width: 100%;
+        /* min-width: 320px would push past a 320px viewport */
+        min-width: 0;
+        max-width: none;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .signin-modal {
+        /* use the full gutter rather than losing 10% on each side */
+        width: 100%;
+        max-width: 440px;
+        padding: 1.75rem 1.35rem 2.25rem;
+    }
+
+    .modal-header {
+        margin-bottom: 1.75rem;
+    }
+
+    .modal-footer {
+        margin-top: 1.75rem;
+        font-size: 0.8rem;
+    }
+
+    .otp-boxes {
+        gap: 0.4rem;
+    }
+
+    .otp-box {
+        height: 48px;
+        font-size: 1.15rem;
+    }
+
+    .verifying-container,
+    .booking-success-content {
+        padding: 2rem 0.5rem;
+    }
+
+    .signed-in-info {
+        padding: 0.7rem 1rem;
+        text-align: left;
+    }
+
+    .signed-in-info span {
+        font-size: 0.85rem;
+        word-break: break-word;
+    }
+}
+
+@media (max-width: 400px) {
+    .signin-modal {
+        padding: 1.5rem 1rem 2rem;
+        border-radius: 14px;
+    }
+
+    .modal-header h2 {
+        font-size: 1.35rem;
+    }
+
+    .modal-header p {
+        font-size: 0.88rem;
+    }
+
+    .auth-option-btn {
+        padding: 0.85rem 0.9rem;
+        gap: 0.65rem;
+    }
+
+    .otp-box {
+        height: 44px;
+        font-size: 1.05rem;
     }
 }
 
@@ -919,4 +1032,112 @@
 
 .btn-primary-bookora:active {
     transform: translateY(0);
+}
+
+/* ==========================================
+   SHORT VIEWPORT (LANDSCAPE PHONES)
+
+   A landscape phone is ~844x390 or ~896x414: wide enough that every
+   max-width rule above is bypassed, but only ~390px tall. The desktop
+   vertical rhythm then applies inside that short window - 104px of modal
+   padding, a 40px header margin, 60px of form padding - and pushes the
+   primary button off screen. Measured at 844x390: email entry 444px tall,
+   OTP screen 608px, profile completion 681px.
+
+   The overlay scrolls, so nothing was ever unreachable, but "Verify" and
+   "Complete Profile" sat below the fold on a screen that was mostly
+   whitespace. These rules only reclaim spacing - no colours, no layout
+   change, no element hidden - so the modal looks the same, just tighter.
+
+   .signin-modal is the shared box class for every modal in the app (sign-in,
+   booking confirm, booking details, cancel confirm), so all of them get the
+   tighter rhythm. The prefix is what keeps generic names like .form-input and
+   .form-group from also squeezing the Profile page's own forms, which live
+   outside any modal.
+   ========================================== */
+
+@media (max-height: 480px) {
+    .signin-modal {
+        padding: 1.25rem 1.5rem 1.5rem;
+    }
+
+    .signin-modal .modal-close,
+    .signin-modal .modal-back {
+        top: 0.85rem;
+    }
+
+    .signin-modal .modal-close {
+        right: 0.85rem;
+    }
+
+    .signin-modal .modal-back {
+        left: 0.85rem;
+    }
+
+    .signin-modal .modal-header {
+        margin-bottom: 1rem;
+    }
+
+    .signin-modal .modal-header h2 {
+        font-size: 1.3rem;
+    }
+
+    .signin-modal .modal-header p {
+        font-size: 0.88rem;
+    }
+
+    .signin-modal .modal-footer {
+        margin-top: 1rem;
+    }
+
+    /* auth choice screen */
+    .signin-modal .auth-options {
+        gap: 0.6rem;
+    }
+
+    .signin-modal .auth-option-btn {
+        padding: 0.8rem 1.2rem;
+    }
+
+    /* email entry screen */
+    .signin-modal .btn-continue {
+        padding: 0.75rem 1.5rem;
+    }
+
+    /* OTP screen - the 44px touch target on .btn-resend is preserved */
+    .signin-modal .otp-input-container {
+        gap: 1rem;
+    }
+
+    .signin-modal .otp-box {
+        height: 46px;
+        font-size: 1.3rem;
+    }
+
+    .signin-modal .otp-timer {
+        padding: 0;
+        gap: 0.5rem;
+    }
+
+    /* profile completion screen */
+    .signin-modal .profile-completion-form {
+        margin-top: 1rem;
+        padding: 0;
+        row-gap: 0.5rem;
+    }
+
+    .signin-modal .form-group {
+        margin-bottom: 0.25rem;
+    }
+
+    .signin-modal .form-input,
+    .signin-modal .country-prefix {
+        padding-top: 0.6rem;
+        padding-bottom: 0.6rem;
+    }
+
+    .signin-modal .btn-primary-bookora {
+        padding: 0.7rem 1.5rem;
+        margin-top: 0;
+    }
 }

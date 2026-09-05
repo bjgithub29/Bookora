@@ -7,6 +7,11 @@ serviceAccount*.json
 *.pem
 *.key
 
+# Database dumps and backups (keep canonical schema trackable)
+backup_*.sql
+*.sql
+!database/database_schema.sql
+
 # Python
 __pycache__/
 *.pyc
@@ -15,12 +20,22 @@ __pycache__/
 .Python
 env/
 venv/
+.venv/
 *.egg-info/
 
-# IDE
+# Tool / assistant / IDE metadata
 .vscode/
 .idea/
+.claude/
+.freebuff/
 
 # OS
 .DS_Store
 Thumbs.db
+
+
+# Local developer artifacts
+BOOKING_FLOW_EXPLAINED.md
+DEPLOYMENT_READINESS_REPORT.md
+functional_check.py
+

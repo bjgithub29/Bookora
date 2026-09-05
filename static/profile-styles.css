@@ -44,10 +44,11 @@ body {
 
 .profile-header h1 {
     font-family: 'Playfair Display', serif;
-    font-size: 36px;
+    font-size: clamp(1.6rem, 2.2vw + 0.6rem, 2.25rem);
     font-weight: 600;
     color: #2a2520;
     margin-bottom: 8px;
+    overflow-wrap: break-word;
 }
 
 .profile-header p {
@@ -92,9 +93,11 @@ body {
 
 .form-control {
     flex: 1;
+    min-width: 0;
     padding: 14px 16px;
     border: 1.5px solid #e8e3dc;
     border-radius: 10px;
+    /* keep at >= 16px: smaller fonts make iOS Safari zoom on focus */
     font-size: 16px;
     color: #2a2520;
     background: #faf8f5;
@@ -130,6 +133,11 @@ body {
 .readonly-label {
     position: absolute;
     right: 16px;
+    /* pinned explicitly: without a `top` the badge falls back to its static
+       position, which moves below the input once .form-input-group stacks
+       on mobile - landing on top of the next form row. 12px matches where
+       align-items:center puts it on desktop. */
+    top: 12px;
     font-size: 12px;
     color: #9b9691;
     background: #f5f2ed;
@@ -240,37 +248,116 @@ body {
     font-size: 16px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* ==========================================
+   RESPONSIVE DESIGN
+
+   Breakpoints mirror the shared ladder in styles.css:
+     992-1199px  small desktop
+     768-991px   tablet (Bootstrap collapses the navbar here)
+     576-767px   large phone
+     <= 575px    phone, down to 320px
+   ========================================== */
+
+@media (max-width: 991.98px) {
+    /* collapsed navbar is shorter, and its items stack vertically - the
+       1.5rem left gutter only made sense while they sat in a row */
     .profile-container-main {
-        margin-top: 80px;
+        margin-top: 78px;
     }
-    
+
+    .nav-item.profile-section,
+    .nav-item.auth-buttons {
+        margin-left: 0;
+        margin-top: 0.75rem;
+    }
+
+    .profile-card {
+        padding: 32px;
+    }
+
+    .profile-header {
+        margin-bottom: 32px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .profile-container-main {
+        margin: 78px auto 40px;
+        padding: 0 1rem;
+    }
+
     .profile-card {
         padding: 28px 20px;
     }
-    
-    .profile-header h1 {
-        font-size: 28px;
+
+    .profile-form {
+        gap: 22px;
     }
-    
+
     .form-input-group {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .btn-edit {
         justify-content: center;
         width: 100%;
+        min-height: 44px;
     }
-    
+
     .form-actions {
         flex-direction: column;
     }
-    
+
     .btn-save,
     .btn-cancel {
         width: 100%;
         justify-content: center;
+        min-height: 48px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .profile-header p {
+        font-size: 15px;
+    }
+
+    .profile-card {
+        padding: 22px 16px;
+        border-radius: 12px;
+    }
+
+    .form-row label {
+        font-size: 13px;
+    }
+
+    .form-control {
+        padding: 13px 14px;
+    }
+
+    /* the input's right padding must clear the absolutely positioned badge */
+    #userEmail,
+    #userPhone {
+        padding-right: 6.5rem;
+    }
+
+    .readonly-label {
+        right: 12px;
+        top: 11px;
+    }
+}
+
+@media (max-width: 400px) {
+    .profile-container-main {
+        padding: 0 0.85rem;
+    }
+
+    .profile-card {
+        padding: 20px 14px;
+    }
+
+    .message-box .alert {
+        padding: 12px 14px;
+        font-size: 13px;
     }
 }
