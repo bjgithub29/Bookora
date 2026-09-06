@@ -1623,7 +1623,20 @@ body {
     padding: 3rem 1.5rem;
     min-height: 180px;
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     text-align: center;
+}
+
+@media (max-width: 575.98px) {
+    .bookora-loader-wrapper {
+        padding: 2rem 1rem;
+        min-height: 140px;
+    }
+    .bookora-loader-text {
+        font-size: 0.88rem;
+        padding: 0 0.5rem;
+    }
 }
 
 .bookora-spinner {
@@ -1690,8 +1703,11 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
     background: #faf8f5;
     display: flex;
     align-items: center;
@@ -1700,6 +1716,9 @@ body {
     opacity: 1;
     transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: all;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .bookora-splash-loader.hidden {
@@ -1712,26 +1731,30 @@ body {
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 2rem;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 380px;
+    box-sizing: border-box;
 }
 
 .splash-logo {
     font-family: var(--font-display, 'Playfair Display', serif);
-    font-size: 2.2rem;
+    font-size: clamp(1.6rem, 6vw, 2.2rem);
     font-weight: 600;
-    letter-spacing: 6px;
+    letter-spacing: clamp(3px, 1.5vw, 6px);
     color: #2a2520;
-    margin-bottom: 1.5rem;
+    margin-bottom: clamp(1rem, 2.5vh, 1.5rem);
+    white-space: nowrap;
 }
 
 .splash-progress-bar {
-    width: 150px;
+    width: min(150px, 45vw);
     height: 3px;
     background: rgba(212, 165, 154, 0.25);
     border-radius: 3px;
     overflow: hidden;
     position: relative;
-    margin-bottom: 1.25rem;
+    margin-bottom: clamp(0.9rem, 2vh, 1.25rem);
 }
 
 .splash-progress-bar::after {
@@ -1754,10 +1777,13 @@ body {
 
 .splash-subtitle {
     font-family: var(--font-body, 'Inter', sans-serif);
-    font-size: 0.88rem;
+    font-size: clamp(0.82rem, 2.8vw, 0.9rem);
     font-weight: 400;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     color: #8b7e74;
+    max-width: 260px;
+    line-height: 1.45;
+    margin: 0;
 }
 
 /* ==========================================

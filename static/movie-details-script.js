@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     
+    initTrailerButtons();
     loadMovieDetails();
 });
 
@@ -324,12 +325,99 @@ function showToast(message) {
     }, 2000);
 }
 
-// Open trailer
+// ==========================================
+// TRAILER MODAL & PLAYER
+// ==========================================
+
+// Extract YouTube video ID from any standard YouTube URL
+function extractYouTubeVideoId(url) {
+    if (!url || typeof url !== 'string') return null;
+    const cleanUrl = url.trim();
+    const regExp = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/i;
+    const match = cleanUrl.match(regExp);
+    return (match && match[1]) ? match[1] : null;
+}
+
+// Open trailer modal with in-app embed player or graceful fallback
 function openTrailer() {
-    if (currentMovie && currentMovie.trailer_url) {
-        window.open(currentMovie.trailer_url, '_blank');
+    if (!currentMovie || !currentMovie.trailer_url) {
+        showToast('Trailer is currently unavailable for this movie');
+        return;
+    }
+    
+    const trailerUrl = (currentMovie.trailer_url || '').trim();
+    const videoId = extractYouTubeVideoId(trailerUrl);
+    
+    if (!videoId) {
+        if (/^https?:\/\//i.test(trailerUrl)) {
+            window.open(trailerUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        showToast('Trailer is currently unavailable for this movie');
+        return;
+    }
+    
+    const modal = document.getElementById('trailerModal');
+    const iframe = document.getElementById('trailerIframe');
+    const titleEl = document.getElementById('trailerMovieTitle');
+    const extLink = document.getElementById('trailerExternalLink');
+    
+    if (modal && iframe) {
+        // Mobile-friendly embed URL:
+        // playsinline=1 allows iOS WebKit to play video inline
+        // autoplay=1 starts playback on user intent
+        // rel=0 restricts related videos to current channel
+        const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1`;
+        iframe.src = embedUrl;
+        
+        if (titleEl) {
+            titleEl.textContent = `${currentMovie.title || 'Movie'} — Official Trailer`;
+        }
+        if (extLink) {
+            extLink.href = `https://www.youtube.com/watch?v=${videoId}`;
+        }
+        
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
     } else {
-        alert('Trailer not available');
+        // Fallback if modal DOM is not present
+        window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank', 'noopener,noreferrer');
+    }
+}
+
+// Close trailer modal and terminate audio/video playback
+function closeTrailerModal(event) {
+    if (event && event.preventDefault) {
+        event.preventDefault();
+    }
+    const modal = document.getElementById('trailerModal');
+    const iframe = document.getElementById('trailerIframe');
+    
+    if (iframe) {
+        iframe.src = '';
+    }
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    document.body.style.overflow = 'auto';
+}
+
+// Initialize trailer buttons with touch & click listeners
+function initTrailerButtons() {
+    const trailerBtn = document.getElementById('trailerBtn');
+    const trailerBadge = document.getElementById('trailerBadge');
+    
+    if (trailerBtn) {
+        trailerBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openTrailer();
+        });
+    }
+    if (trailerBadge) {
+        trailerBadge.addEventListener('click', (e) => {
+            e.preventDefault();
+            openTrailer();
+        });
     }
 }
 

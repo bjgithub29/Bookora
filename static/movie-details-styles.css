@@ -305,6 +305,9 @@ body {
     font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.3s;
+    z-index: 5;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .trailer-badge:hover {
@@ -417,6 +420,10 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 0.65rem;
+    position: relative;
+    z-index: 2;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .banner-cta-trailer:hover {
@@ -1205,5 +1212,159 @@ body {
     .trailer-badge {
         font-size: 0.8rem;
         padding: 0.6rem;
+    }
+}
+
+/* ==========================================
+   TRAILER MODAL & VIDEO PLAYER
+   ========================================== */
+.trailer-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    background: rgba(18, 15, 13, 0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    padding: 1.25rem;
+    box-sizing: border-box;
+}
+
+.trailer-modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.trailer-modal-container {
+    background: #1e1916;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 860px;
+    position: relative;
+    border: 1px solid rgba(212, 165, 154, 0.25);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+    overflow: hidden;
+    transform: scale(0.94);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.trailer-modal-overlay.active .trailer-modal-container {
+    transform: scale(1);
+}
+
+.trailer-modal-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: #ffffff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all 0.2s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.trailer-modal-close:hover {
+    background: var(--accent-pink, #d4a59a);
+    color: #ffffff;
+    transform: rotate(90deg);
+}
+
+.trailer-video-wrapper {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+    height: 0;
+    background: #0a0908;
+}
+
+.trailer-video-wrapper iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.trailer-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.9rem 1.25rem;
+    background: #241f1c;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.trailer-movie-title {
+    font-family: var(--font-display, 'Playfair Display', serif);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: 0.3px;
+}
+
+.trailer-external-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--accent-pink, #d4a59a);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.trailer-external-btn:hover {
+    color: #ffffff;
+}
+
+@media (max-width: 575.98px) {
+    .trailer-modal-overlay {
+        padding: 0.5rem;
+    }
+    .trailer-modal-container {
+        border-radius: 12px;
+    }
+    .trailer-modal-close {
+        top: 0.5rem;
+        right: 0.5rem;
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+    }
+    .trailer-modal-footer {
+        padding: 0.75rem 1rem;
+    }
+    .trailer-movie-title {
+        font-size: 0.95rem;
+    }
+    .trailer-external-btn {
+        font-size: 0.85rem;
     }
 }
