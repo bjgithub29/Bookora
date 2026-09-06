@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Close dropdown on page show (handles back button navigation from cache)
 window.addEventListener('pageshow', () => {
+    checkAuth();
     const dropdown = document.getElementById('profileDropdown');
     if (dropdown) {
         dropdown.classList.remove('active');
@@ -26,8 +27,8 @@ function checkAuth() {
     const user = localStorage.getItem('bookoraUser');
     
     if (!user) {
-        // Redirect to home if not logged in
-        window.location.href = '/';
+        // Redirect to home immediately if not logged in
+        window.location.replace('/');
         return;
     }
     
@@ -120,14 +121,14 @@ function displaySavedMovies() {
 // Create movie card HTML
 function createMovieCard(movie) {
     // Handle poster URL - check if it already includes /static/posters/
-    let posterUrl = 'https://via.placeholder.com/300x450';
+    let posterUrl = '/static/posters/placeholder.svg';
     if (movie.poster_url) {
         posterUrl = movie.poster_url.startsWith('/static/') ? movie.poster_url : `/static/posters/${movie.poster_url}`;
     }
     
     return `
         <div class="movie-card" onclick="navigateToMovieDetails('${movie.slug}')">
-            <div class="movie-poster" style="background: url('${posterUrl}') center/cover;">
+            <div class="movie-poster" style="background: #2a2520 url('${posterUrl}') center/cover;">
                 <div class="rating-badge">
                     <i class="fas fa-star"></i> ${movie.certification || 'U/A'}
                 </div>
@@ -161,29 +162,3 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Handle logout
-function handleLogout(e) {
-    e.preventDefault();
-    
-    // Get user name before clearing
-    const user = getCurrentUser();
-    const userName = user ? user.name : 'User';
-    
-    // Clear user data from localStorage
-    logoutUser();
-    
-    // Clear any temporary session data
-    sessionStorage.removeItem('tempMobile');
-    sessionStorage.removeItem('tempEmail');
-    
-    // Close dropdown
-    const dropdown = document.querySelector('.profile-dropdown');
-    if (dropdown) {
-        dropdown.classList.remove('active');
-    }
-    
-    // Show logout confirmation toast
-    showLogoutConfirmation(userName);
-    
-    console.log('User logged out successfully - all state cleared');
-}

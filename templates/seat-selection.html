@@ -116,8 +116,10 @@
     <!-- Main Content -->
     <div class="container">
         <header>
-            <h1 id="movieTitle">Loading...</h1>
-            <div class="show-details" id="showDetails"></div>
+            <h1 id="movieTitle"><span class="bookora-skeleton bookora-skeleton-title" style="display:inline-block; width: 280px; height: 32px; vertical-align: middle;"></span></h1>
+            <div class="show-details" id="showDetails">
+                <span class="bookora-skeleton bookora-skeleton-meta" style="display:inline-block; width: 200px; height: 18px; vertical-align: middle;"></span>
+            </div>
         </header>
 
         <!-- Screen Indicator -->
@@ -127,7 +129,10 @@
 
         <!-- Seat Map -->
         <div class="seats-container" id="seatsContainer">
-            <div class="loading">Loading seats...</div>
+            <div class="bookora-loader-wrapper" style="min-height: 250px;">
+                <div class="bookora-spinner"></div>
+                <div class="bookora-loader-text">Loading auditorium layout and available seats...</div>
+            </div>
         </div>
 
         <!-- Legend -->

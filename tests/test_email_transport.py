@@ -28,22 +28,26 @@ class TestEmailProviderDetection(unittest.TestCase):
             self.assertEqual(bookora._get_email_provider(), 'smtp')
 
     def test_inferred_brevo_from_api_key(self):
-        with patch.object(bookora, 'EMAIL_PROVIDER', ''):
-            with patch.object(bookora, 'BREVO_API_KEY', 'xkeysib-test-123'):
-                with patch.object(bookora, 'RESEND_API_KEY', None):
-                    self.assertEqual(bookora._get_email_provider(), 'brevo')
+        with patch.dict('os.environ', {'EMAIL_PROVIDER': '', 'BREVO_API_KEY': 'xkeysib-test-123', 'RESEND_API_KEY': ''}):
+            with patch.object(bookora, 'EMAIL_PROVIDER', ''):
+                with patch.object(bookora, 'BREVO_API_KEY', 'xkeysib-test-123'):
+                    with patch.object(bookora, 'RESEND_API_KEY', None):
+                        self.assertEqual(bookora._get_email_provider(), 'brevo')
 
     def test_inferred_resend_from_api_key(self):
-        with patch.object(bookora, 'EMAIL_PROVIDER', ''):
-            with patch.object(bookora, 'BREVO_API_KEY', None):
-                with patch.object(bookora, 'RESEND_API_KEY', 're_test_123'):
-                    self.assertEqual(bookora._get_email_provider(), 'resend')
+        with patch.dict('os.environ', {'EMAIL_PROVIDER': '', 'BREVO_API_KEY': '', 'RESEND_API_KEY': 're_test_123'}):
+            with patch.object(bookora, 'EMAIL_PROVIDER', ''):
+                with patch.object(bookora, 'BREVO_API_KEY', None):
+                    with patch.object(bookora, 'RESEND_API_KEY', 're_test_123'):
+                        self.assertEqual(bookora._get_email_provider(), 'resend')
 
     def test_default_fallback_to_smtp(self):
-        with patch.object(bookora, 'EMAIL_PROVIDER', ''):
-            with patch.object(bookora, 'BREVO_API_KEY', None):
-                with patch.object(bookora, 'RESEND_API_KEY', None):
-                    self.assertEqual(bookora._get_email_provider(), 'smtp')
+        with patch.dict('os.environ', {'EMAIL_PROVIDER': '', 'BREVO_API_KEY': '', 'RESEND_API_KEY': ''}):
+            with patch.object(bookora, 'EMAIL_PROVIDER', ''):
+                with patch.object(bookora, 'BREVO_API_KEY', None):
+                    with patch.object(bookora, 'RESEND_API_KEY', None):
+                        self.assertEqual(bookora._get_email_provider(), 'smtp')
+
 
 
 class TestBrevoHttpTransport(unittest.TestCase):

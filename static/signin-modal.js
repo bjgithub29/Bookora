@@ -127,31 +127,65 @@ function navigateToSavedMovies(e) {
     window.location.href = '/saved-movies';
 }
 
-// Handle logout
+// Reusable image error fallback handler for all pages
+function handleImageError(img, type = 'poster') {
+    if (!img) return;
+    img.onerror = null; // Prevent recursion
+    img.src = type === 'banner' ? '/static/banners/placeholder.svg' : '/static/posters/placeholder.svg';
+    img.classList.add('bookora-placeholder-image');
+}
+
+// Centralized, idempotent logout handler
 function handleLogout(e) {
-    e.preventDefault();
+    if (e && typeof e.preventDefault === 'function') {
+        e.preventDefault();
+    }
     
-    // Get user name before clearing
+    // Check if user is currently authenticated
     const user = getCurrentUser();
-    const userName = user ? user.name : 'User';
+    if (!user) {
+        // Already logged out: close dropdown and redirect if on a protected page
+        const dropdown = document.getElementById('profileDropdown') || document.querySelector('.profile-dropdown');
+        if (dropdown) dropdown.classList.remove('active');
+        if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
+            window.location.href = '/';
+        }
+        return;
+    }
     
-    // Clear user data from localStorage
+    const userName = user.name || 'User';
+    
+    // Clear user data from localStorage & server session
     logoutUser();
     
-    // Clear any temporary session data
+    // Clear temporary data
     sessionStorage.removeItem('tempEmail');
+    sessionStorage.removeItem('tempMobile');
+    sessionStorage.removeItem('bookora_pending_booking');
     
     // Clear OTP timer if running
-    if (otpTimer) {
+    if (typeof otpTimer !== 'undefined' && otpTimer) {
         clearInterval(otpTimer);
         otpTimer = null;
     }
     
     // Close dropdown
-    toggleProfileDropdown();
+    const dropdown = document.getElementById('profileDropdown') || document.querySelector('.profile-dropdown');
+    if (dropdown) {
+        dropdown.classList.remove('active');
+    }
     
-    // Show logout confirmation toast
-    showLogoutConfirmation(userName);
+    // Always redirect to homepage
+    if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
+        // Already on homepage: show toast directly and update navbar
+        sessionStorage.removeItem('bookora_logout_message');
+        showLogoutConfirmation(userName);
+        updateAuthUI();
+    } else {
+        // Store message so homepage displays the toast once upon arrival
+        sessionStorage.setItem('bookora_logout_message', userName);
+        window.location.href = '/';
+    }
     
     console.log('User logged out successfully - all state cleared');
 }
@@ -1001,5 +1035,11 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// Sync auth UI when navigating with browser back/forward cache
+window.addEventListener('pageshow', () => {
+    updateAuthUI();
+});
+
 console.log('✅ signin-modal.js loaded completely');
 console.log('✅ openSignInModal is:', typeof openSignInModal);
+

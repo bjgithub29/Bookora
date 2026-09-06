@@ -59,32 +59,6 @@ function navigateToSavedMovies(event) {
     window.location.href = '/saved-movies';
 }
 
-function handleLogout(event) {
-    event.preventDefault();
-    
-    // Get user name before clearing
-    const user = getCurrentUser();
-    const userName = user ? user.name : 'User';
-    
-    // Clear user data from localStorage
-    logoutUser();
-    
-    // Clear any temporary session data
-    sessionStorage.removeItem('tempMobile');
-    sessionStorage.removeItem('tempEmail');
-    
-    // Close dropdown
-    const dropdown = document.getElementById('profileDropdown');
-    if (dropdown) {
-        dropdown.classList.remove('active');
-    }
-    
-    // Show logout confirmation toast
-    showLogoutConfirmation(userName);
-    
-    console.log('User logged out successfully - all state cleared');
-}
-
 // Close dropdown when clicking outside
 document.addEventListener('click', function(e) {
     const profileContainer = document.querySelector('.profile-container');
@@ -183,12 +157,6 @@ async function loadMovie() {
         
         document.title = `${movieData.title} - Select Show - Bookora`;
         
-        // Render date buttons
-        renderDateButtons();
-        
-        // Load shows for today
-        loadShows();
-        
     } catch (error) {
         console.error('❌ Error loading movie:', error);
         document.getElementById('movieTitle').textContent = 'Error Loading Movie';
@@ -229,16 +197,21 @@ function selectDate(date) {
 // Load shows
 async function loadShows() {
     const container = document.getElementById('theatresContainer');
-    container.innerHTML = '<div class="shows-loading">Loading shows...</div>';
+    container.innerHTML = `
+        <div class="bookora-loader-wrapper" style="min-height: 250px;">
+            <div class="bookora-spinner"></div>
+            <div class="bookora-loader-text">Finding available theatres and showtimes...</div>
+        </div>
+    `;
     
     try {
+        const slug = (movieData && movieData.slug) || movieSlug;
         console.log('\n🎭 LOADING SHOWS...');
-        console.log('   → Movie ID:', movieData.id);
-        console.log('   → Movie Slug:', movieData.slug);
+        console.log('   → Movie Slug:', slug);
         console.log('   → Selected Date:', selectedDate);
         
         // Use slug parameter (backend will resolve to ID)
-        const apiUrl = `/api/shows?slug=${movieData.slug}&date=${selectedDate}`;
+        const apiUrl = `/api/shows?slug=${slug}&date=${selectedDate}`;
         console.log('   → Fetching from:', apiUrl);
         
         const response = await fetch(apiUrl);
@@ -327,5 +300,8 @@ function selectShow(showId) {
 // Check auth state on page load
 checkAuth();
 
-// Initialize
-loadMovie();
+// Render date buttons immediately
+renderDateButtons();
+
+// Load movie metadata and shows in parallel for optimal responsiveness
+Promise.all([loadMovie(), loadShows()]);

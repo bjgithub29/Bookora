@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Close dropdown on page show (handles back button navigation from cache)
 window.addEventListener('pageshow', () => {
+    checkAuth();
     const dropdown = document.getElementById('profileDropdown');
     if (dropdown) {
         dropdown.classList.remove('active');
@@ -27,8 +28,8 @@ function checkAuth() {
     const user = localStorage.getItem('bookoraUser');
     
     if (!user) {
-        // Redirect to home if not logged in
-        window.location.href = '/';
+        // Redirect to home immediately if not logged in
+        window.location.replace('/');
         return;
     }
     
@@ -310,30 +311,3 @@ document.addEventListener('click', (e) => {
         dropdown.classList.remove('active');
     }
 });
-
-// Handle logout
-function handleLogout(e) {
-    e.preventDefault();
-    
-    // Get user name before clearing
-    const user = getCurrentUser();
-    const userName = user ? user.name : 'User';
-    
-    // Clear user data from localStorage
-    logoutUser();
-    
-    // Clear any temporary session data
-    sessionStorage.removeItem('tempMobile');
-    sessionStorage.removeItem('tempEmail');
-    
-    // Close dropdown
-    const dropdown = document.querySelector('.profile-dropdown');
-    if (dropdown) {
-        dropdown.classList.remove('active');
-    }
-    
-    // Show logout confirmation toast
-    showLogoutConfirmation(userName);
-    
-    console.log('User logged out successfully - all state cleared');
-}

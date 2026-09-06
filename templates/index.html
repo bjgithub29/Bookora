@@ -1071,6 +1071,15 @@
 </head>
 <body>
 
+    <!-- Bookora Branded Initial Splash Loader -->
+    <div id="appSplashLoader" class="bookora-splash-loader" aria-live="polite" aria-busy="true">
+        <div class="splash-content">
+            <div class="splash-logo">BOOKORA</div>
+            <div class="splash-progress-bar"></div>
+            <p class="splash-subtitle">Loading your cinema experience...</p>
+        </div>
+    </div>
+
     <!-- ==========================================
          NAVBAR - LIGHT & STICKY
          ========================================== -->
@@ -1195,57 +1204,7 @@
             -->
             <div class="banners-wrapper" id="bannersWrapper">
                 <div class="banners-stack" id="bannersStack">
-                    
-                    <!-- Movie Banner 1 -->
-                    <div class="movie-banner" data-index="0">
-                        <div class="banner-image" style="background: linear-gradient(135deg, rgba(30,60,114,0.2), rgba(42,82,152,0.3)), url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%231e3c72%22 width=%22400%22 height=%22300%22/%3E%3Ccircle cx=%22200%22 cy=%22150%22 r=%2280%22 fill=%22%232a5298%22 opacity=%220.3%22/%3E%3C/svg%3E'); background-size: cover;"></div>
-                        <div class="banner-content">
-                            <h3 class="banner-title">Avatar: The Way of Water</h3>
-                            <p class="banner-subtitle">Experience the epic journey across Pandora's oceans</p>
-                            <button class="btn-book" onclick="bookMovie('Avatar')">Book Now</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Movie Banner 2 -->
-                    <div class="movie-banner" data-index="1">
-                        <div class="banner-image" style="background: linear-gradient(135deg, rgba(74,78,105,0.2), rgba(154,140,152,0.3)), url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%234a4e69%22 width=%22400%22 height=%22300%22/%3E%3Ccircle cx=%22200%22 cy=%22150%22 r=%2280%22 fill=%22%239a8c98%22 opacity=%220.3%22/%3E%3C/svg%3E'); background-size: cover;"></div>
-                        <div class="banner-content">
-                            <h3 class="banner-title">Oppenheimer</h3>
-                            <p class="banner-subtitle">The story of the man who changed history forever</p>
-                            <button class="btn-book" onclick="bookMovie('Oppenheimer')">Book Now</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Movie Banner 3 -->
-                    <div class="movie-banner" data-index="2">
-                        <div class="banner-image" style="background: linear-gradient(135deg, rgba(228,168,83,0.2), rgba(212,165,116,0.3)), url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23e4a853%22 width=%22400%22 height=%22300%22/%3E%3Ccircle cx=%22200%22 cy=%22150%22 r=%2280%22 fill=%22%23d4a574%22 opacity=%220.3%22/%3E%3C/svg%3E'); background-size: cover;"></div>
-                        <div class="banner-content">
-                            <h3 class="banner-title">Dune: Part Two</h3>
-                            <p class="banner-subtitle">The saga continues on the desert planet Arrakis</p>
-                            <button class="btn-book" onclick="bookMovie('Dune')">Book Now</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Movie Banner 4 -->
-                    <div class="movie-banner" data-index="3">
-                        <div class="banner-image" style="background: linear-gradient(135deg, rgba(139,69,19,0.2), rgba(205,133,63,0.3)), url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%238b4513%22 width=%22400%22 height=%22300%22/%3E%3Ccircle cx=%22200%22 cy=%22150%22 r=%2280%22 fill=%22%23cd853f%22 opacity=%220.3%22/%3E%3C/svg%3E'); background-size: cover;"></div>
-                        <div class="banner-content">
-                            <h3 class="banner-title">Killers of the Flower Moon</h3>
-                            <p class="banner-subtitle">A gripping tale of greed and justice in 1920s Oklahoma</p>
-                            <button class="btn-book" onclick="bookMovie('Killers')">Book Now</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Movie Banner 5 -->
-                    <div class="movie-banner" data-index="4">
-                        <div class="banner-image" style="background: linear-gradient(135deg, rgba(255,105,180,0.2), rgba(255,182,193,0.3)), url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23ff69b4%22 width=%22400%22 height=%22300%22/%3E%3Ccircle cx=%22200%22 cy=%22150%22 r=%2280%22 fill=%22%23ffb6c1%22 opacity=%220.3%22/%3E%3C/svg%3E'); background-size: cover;"></div>
-                        <div class="banner-content">
-                            <h3 class="banner-title">Barbie</h3>
-                            <p class="banner-subtitle">Life in plastic, it's fantastic – discover Barbieland</p>
-                            <button class="btn-book" onclick="bookMovie('Barbie')">Book Now</button>
-                        </div>
-                    </div>
-                    
+                    <!-- Hero banners are loaded dynamically from production movies API -->
                 </div>
             </div>
         </div>
@@ -1773,13 +1732,24 @@
         let allMovies = [];
         let heroMovies = [];
         
+        // Splash loader dismissal helper
+        function hideSplashLoader() {
+            const loader = document.getElementById('appSplashLoader');
+            if (loader) {
+                loader.classList.add('hidden');
+                setTimeout(() => {
+                    if (loader.parentNode) loader.parentNode.removeChild(loader);
+                }, 400);
+            }
+        }
+
         // Load movies data
         async function loadMoviesData() {
             try {
                 const response = await fetch('/api/movies');
                 const data = await response.json();
                 
-                if (data.success) {
+                if (data.success && Array.isArray(data.movies) && data.movies.length > 0) {
                     allMovies = data.movies;
                     
                     // Initialize hero and sections after data loads
@@ -1788,10 +1758,12 @@
                     
                     console.log('✅ Loaded', allMovies.length, 'movies from API');
                 } else {
-                    console.error('❌ Failed to load movies:', data.message);
+                    console.error('❌ Failed to load movies:', data.message || 'No movies returned');
                 }
             } catch (error) {
                 console.error('❌ Error loading movies data:', error);
+            } finally {
+                hideSplashLoader();
             }
         }
         
@@ -1807,16 +1779,19 @@
             const bannersStack = document.getElementById('bannersStack');
             if (!bannersStack) return;
             
-            bannersStack.innerHTML = heroMovies.map((movie, index) => `
+            bannersStack.innerHTML = heroMovies.map((movie, index) => {
+                const bannerUrl = movie.banner_url || '/static/banners/placeholder.svg';
+                return `
                 <div class="movie-banner" data-index="${index}">
-                    <div class="banner-image" style="background: linear-gradient(135deg, rgba(42, 37, 32, 0.4), rgba(42, 37, 32, 0.6)), url('${movie.banner_url}'); background-size: cover; background-position: center;"></div>
+                    <div class="banner-image" style="background: linear-gradient(135deg, rgba(42, 37, 32, 0.4), rgba(42, 37, 32, 0.6)), url('${bannerUrl}'); background-size: cover; background-position: center;"></div>
                     <div class="banner-content">
                         <h3 class="banner-title">${movie.title}</h3>
-                        <p class="banner-subtitle">${movie.description.substring(0, 80)}...</p>
+                        <p class="banner-subtitle">${(movie.description || '').substring(0, 80)}...</p>
                         <button class="btn-book" onclick="navigateToMovie('${movie.slug}')">Book Now</button>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
             
             // Re-initialize hero interaction after DOM update
             setTimeout(initHeroInteraction, 100);
@@ -1865,12 +1840,12 @@
         // Create movie card HTML with real data
         function createMovieCard(movie) {
             const ratingDisplay = movie.certification || movie.rating || 'N/A';
-            const languageDisplay = Array.isArray(movie.language) ? movie.language.join(', ') : movie.language;
-            const posterUrl = movie.poster_url || movie.poster;
+            const languageDisplay = Array.isArray(movie.language) ? movie.language.join(', ') : (movie.language || '');
+            const posterUrl = movie.poster_url || movie.poster || '/static/posters/placeholder.svg';
             
             return `
                 <div class="movie-card" onclick="navigateToMovie('${movie.slug}')">
-                    <div class="movie-poster" style="background: url('${posterUrl}'); background-size: cover; background-position: center;">
+                    <div class="movie-poster" style="background: #2a2520 url('${posterUrl}'); background-size: cover; background-position: center;">
                         <div class="rating-badge">
                             <i class="fas fa-star"></i> ${ratingDisplay}
                         </div>
@@ -2053,10 +2028,32 @@
             }
         });
         
+        // Check if there is a pending logout toast message from another page
+        function checkPendingLogoutToast() {
+            const logoutMsg = sessionStorage.getItem('bookora_logout_message');
+            if (logoutMsg) {
+                sessionStorage.removeItem('bookora_logout_message');
+                setTimeout(() => {
+                    if (typeof showLogoutConfirmation === 'function') {
+                        showLogoutConfirmation(logoutMsg);
+                    }
+                }, 150);
+            }
+        }
+
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadMoviesData(); // Load JSON data first
             handleHashOnLoad(); // Handle hash navigation if present
+            checkPendingLogoutToast();
+        });
+
+        // Ensure fresh state and process pending logout if navigating back
+        window.addEventListener('pageshow', function() {
+            checkPendingLogoutToast();
+            if (typeof updateAuthUI === 'function') {
+                updateAuthUI();
+            }
         });
         
         console.log('✅ Bookora loaded - Cursor-driven hero active');

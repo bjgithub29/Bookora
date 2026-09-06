@@ -116,8 +116,8 @@
     <div class="shows-main-container">
         <!-- Movie Title Section -->
         <div class="shows-movie-header">
-            <h1 class="shows-movie-title" id="movieTitle">Loading...</h1>
-            <p class="shows-movie-meta" id="movieDetails"></p>
+            <h1 class="shows-movie-title" id="movieTitle"><span class="bookora-skeleton bookora-skeleton-title"></span></h1>
+            <p class="shows-movie-meta" id="movieDetails"><span class="bookora-skeleton bookora-skeleton-meta"></span></p>
         </div>
 
         <!-- Date Selector -->
@@ -130,7 +130,10 @@
         <section class="shows-theatres-section">
             <h2 class="shows-section-title">Select Show</h2>
             <div id="theatresContainer" class="shows-theatres-container">
-                <div class="shows-loading">Loading shows...</div>
+                <div class="bookora-loader-wrapper">
+                    <div class="bookora-spinner"></div>
+                    <p class="bookora-loader-text">Loading shows...</p>
+                </div>
             </div>
         </section>
     </div>

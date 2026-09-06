@@ -50,32 +50,6 @@ function navigateToSavedMovies(event) {
     window.location.href = '/saved-movies';
 }
 
-function handleLogout(event) {
-    event.preventDefault();
-    
-    // Get user name before clearing
-    const user = getCurrentUser();
-    const userName = user ? user.name : 'User';
-    
-    // Clear user data from localStorage
-    logoutUser();
-    
-    // Clear any temporary session data
-    sessionStorage.removeItem('tempMobile');
-    sessionStorage.removeItem('tempEmail');
-    
-    // Close dropdown
-    const dropdown = document.getElementById('profileDropdown');
-    if (dropdown) {
-        dropdown.classList.remove('active');
-    }
-    
-    // Show logout confirmation toast
-    showLogoutConfirmation(userName);
-    
-    console.log('User logged out successfully - all state cleared');
-}
-
 // Close dropdown when clicking outside
 document.addEventListener('click', function(e) {
     const profileContainer = document.querySelector('.profile-container');
@@ -98,6 +72,16 @@ let selectedSeats = [];
 
 // Load show and seats
 async function loadShowAndSeats() {
+    const seatsContainer = document.getElementById('seatsContainer');
+    if (seatsContainer) {
+        seatsContainer.innerHTML = `
+            <div class="bookora-loader-wrapper" style="min-height: 250px;">
+                <div class="bookora-spinner"></div>
+                <div class="bookora-loader-text">Loading auditorium layout and available seats...</div>
+            </div>
+        `;
+    }
+    
     try {
         const response = await fetch(`/api/seats/${showId}`);
         const data = await response.json();
@@ -273,10 +257,37 @@ async function proceedToPayment() {
     showBookingConfirmationModal(seatDetails, totalPrice);
 }
 
+// HTML escape helper
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // Show booking confirmation modal
 function showBookingConfirmationModal(seatDetails, totalPrice) {
     const modal = document.getElementById('bookingConfirmModal');
     const content = document.getElementById('bookingConfirmContent');
+    const actions = document.getElementById('confirmActions');
+    const button = document.getElementById('confirmBookingBtn');
+    const modalTitle = document.getElementById('confirmModalTitle');
+    const modalSubtitle = document.getElementById('confirmModalSubtitle');
+    
+    // Reset header & action states
+    if (modalTitle) {
+        modalTitle.style.display = '';
+        modalTitle.textContent = 'Confirm Your Booking';
+    }
+    if (modalSubtitle) {
+        modalSubtitle.style.display = '';
+        modalSubtitle.textContent = 'Please review your ticket details';
+    }
+    if (actions) actions.style.display = 'flex';
+    if (button) button.disabled = false;
     
     // Check if all seats have same price
     const uniquePrices = [...new Set(seatDetails.map(s => parseFloat(s.price)))];
@@ -314,11 +325,11 @@ function showBookingConfirmationModal(seatDetails, totalPrice) {
     content.innerHTML = `
         <div class="booking-detail-row">
             <span class="booking-detail-label">Movie</span>
-            <span class="booking-detail-value">${showData.movie_title}</span>
+            <span class="booking-detail-value">${escapeHtml(showData.movie_title)}</span>
         </div>
         <div class="booking-detail-row">
             <span class="booking-detail-label">Venue</span>
-            <span class="booking-detail-value">${showData.theatre_name}</span>
+            <span class="booking-detail-value">${escapeHtml(showData.theatre_name)}</span>
         </div>
         <div class="booking-detail-row">
             <span class="booking-detail-label">Show Time</span>
@@ -388,13 +399,15 @@ async function confirmBooking() {
     const button = document.getElementById('confirmBookingBtn');
     const content = document.getElementById('bookingConfirmContent');
     const actions = document.getElementById('confirmActions');
+    const modalTitle = document.getElementById('confirmModalTitle');
+    const modalSubtitle = document.getElementById('confirmModalSubtitle');
     
     // Show verification loader
     button.disabled = true;
     content.innerHTML = `
-        <div class="verification-loader">
-            <div class="spinner"></div>
-            <p class="verification-text">Processing your booking...</p>
+        <div class="bookora-loader-wrapper" style="min-height: 180px;">
+            <div class="bookora-spinner"></div>
+            <div class="bookora-loader-text">Processing and confirming your booking...</div>
         </div>
     `;
     actions.style.display = 'none';
@@ -418,23 +431,69 @@ async function confirmBooking() {
         const data = await response.json();
         
         if (data.success) {
-            // Show success state
-            setTimeout(() => {
-                content.innerHTML = `
-                    <div class="booking-success-content">
-                        <div class="success-icon">🎉</div>
-                        <h3 class="success-title">Booking Confirmed!</h3>
-                        <p class="success-message">Your tickets have been booked successfully.<br>You can view details in My Bookings section.</p>
+            // Hide initial modal headers for receipt card
+            if (modalTitle) modalTitle.style.display = 'none';
+            if (modalSubtitle) modalSubtitle.style.display = 'none';
+            
+            const movieTitle = showData ? showData.movie_title : 'Movie';
+            const theatreName = showData ? showData.theatre_name : 'Theatre';
+            const showDateStr = showData ? formatShowDate(showData.show_date) : '';
+            const showTimeStr = showData ? formatShowTime(showData.show_time) : '';
+            const seatLabels = seatDetails.map(s => s.seat_label).join(', ');
+            const finalPrice = parseFloat(data.total_price || totalPrice).toFixed(2);
+            const bookingRef = data.booking_id ? `#${data.booking_id}` : 'Confirmed';
+
+            content.innerHTML = `
+                <div class="booking-success-content" style="text-align: center; padding: 0.5rem 0;">
+                    <div class="booking-success-icon">
+                        <i class="fas fa-check"></i>
                     </div>
-                `;
-                
-                // Auto-redirect after 3 seconds
-                setTimeout(() => {
-                    window.location.href = '/my-bookings';
-                }, 3000);
-            }, 1500);
+                    <h3 class="success-title">Booking Confirmed!</h3>
+                    <p class="success-message">Your tickets have been reserved successfully.</p>
+                    
+                    <div class="booking-confirmed-details">
+                        <div class="confirmed-detail-row">
+                            <span>Booking ID</span>
+                            <strong>${bookingRef}</strong>
+                        </div>
+                        <div class="confirmed-detail-row">
+                            <span>Movie</span>
+                            <strong>${escapeHtml(movieTitle)}</strong>
+                        </div>
+                        <div class="confirmed-detail-row">
+                            <span>Theatre</span>
+                            <strong>${escapeHtml(theatreName)}</strong>
+                        </div>
+                        <div class="confirmed-detail-row">
+                            <span>Showtime</span>
+                            <strong>${showDateStr}, ${showTimeStr}</strong>
+                        </div>
+                        <div class="confirmed-detail-row">
+                            <span>Seats (${seatDetails.length})</span>
+                            <strong>${escapeHtml(seatLabels)}</strong>
+                        </div>
+                        <div class="confirmed-detail-row">
+                            <span>Total Paid</span>
+                            <strong class="highlight">₹${finalPrice}</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="booking-success-actions">
+                        <button class="btn-view-bookings" onclick="window.location.href='/my-bookings'">
+                            <i class="fas fa-ticket-alt" style="margin-right: 0.5rem;"></i>View My Bookings
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Graceful auto redirect to My Bookings after 4 seconds
+            setTimeout(() => {
+                window.location.href = '/my-bookings';
+            }, 4000);
         } else {
             // Show error and allow retry
+            if (modalTitle) modalTitle.style.display = '';
+            if (modalSubtitle) modalSubtitle.style.display = '';
             content.innerHTML = `
                 <div class="booking-error-content" style="text-align: center; padding: 2rem; color: #d32f2f;">
                     <i class="fas fa-exclamation-circle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
@@ -446,6 +505,8 @@ async function confirmBooking() {
         }
     } catch (error) {
         console.error('Error creating booking:', error);
+        if (modalTitle) modalTitle.style.display = '';
+        if (modalSubtitle) modalSubtitle.style.display = '';
         content.innerHTML = `
             <div class="booking-error-content" style="text-align: center; padding: 2rem; color: #d32f2f;">
                 <i class="fas fa-exclamation-circle" style="font-size: 3rem; margin-bottom: 1rem;"></i>

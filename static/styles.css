@@ -1609,3 +1609,281 @@ body {
         top: calc(100% + 0.5rem);
     }
 }
+
+/* ==========================================
+   BOOKORA REUSABLE LOADING DESIGN SYSTEM
+   Editorial | Calm | Premium
+   ========================================== */
+
+.bookora-loader-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+    min-height: 180px;
+    width: 100%;
+    text-align: center;
+}
+
+.bookora-spinner {
+    width: 38px;
+    height: 38px;
+    border: 3px solid rgba(212, 165, 154, 0.22);
+    border-top-color: var(--accent-pink, #d4a59a);
+    border-radius: 50%;
+    animation: bookora-spin 0.85s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    margin-bottom: 1rem;
+}
+
+.bookora-spinner.sm {
+    width: 24px;
+    height: 24px;
+    border-width: 2px;
+    margin-bottom: 0.5rem;
+}
+
+.bookora-loader-text {
+    font-family: var(--font-body, 'Inter', sans-serif);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-secondary, #6b6560);
+    letter-spacing: 0.3px;
+}
+
+@keyframes bookora-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Skeleton Loading Shimmer */
+.bookora-skeleton {
+    background: linear-gradient(90deg, #ede8e3 25%, #f7f4f0 50%, #ede8e3 75%);
+    background-size: 200% 100%;
+    animation: bookora-shimmer 1.6s infinite ease-in-out;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.bookora-skeleton-title {
+    height: 32px;
+    width: 280px;
+    max-width: 80%;
+    margin-bottom: 0.5rem;
+}
+
+.bookora-skeleton-meta {
+    height: 18px;
+    width: 190px;
+    max-width: 60%;
+}
+
+@keyframes bookora-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ==========================================
+   HOMEPAGE BRANDED SPLASH LOADER
+   ========================================== */
+
+.bookora-splash-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #faf8f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    opacity: 1;
+    transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: all;
+}
+
+.bookora-splash-loader.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.splash-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 2rem;
+}
+
+.splash-logo {
+    font-family: var(--font-display, 'Playfair Display', serif);
+    font-size: 2.2rem;
+    font-weight: 600;
+    letter-spacing: 6px;
+    color: #2a2520;
+    margin-bottom: 1.5rem;
+}
+
+.splash-progress-bar {
+    width: 150px;
+    height: 3px;
+    background: rgba(212, 165, 154, 0.25);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 1.25rem;
+}
+
+.splash-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 40%;
+    background: var(--accent-pink, #d4a59a);
+    border-radius: 3px;
+    animation: splash-indeterminate 1.2s ease-in-out infinite;
+}
+
+@keyframes splash-indeterminate {
+    0% { left: -40%; width: 30%; }
+    50% { left: 30%; width: 50%; }
+    100% { left: 100%; width: 30%; }
+}
+
+.splash-subtitle {
+    font-family: var(--font-body, 'Inter', sans-serif);
+    font-size: 0.88rem;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    color: #8b7e74;
+}
+
+/* ==========================================
+   BOOKING CONFIRMATION MODAL ENHANCEMENTS
+   ========================================== */
+
+.booking-success-content {
+    text-align: center;
+    padding: 1.5rem 1rem;
+}
+
+.booking-success-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1.25rem auto;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(212, 165, 154, 0.18) 0%, rgba(200, 155, 142, 0.28) 100%);
+    border: 2px solid var(--accent-pink, #d4a59a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-pink, #d4a59a);
+    font-size: 1.75rem;
+}
+
+.booking-success-content .success-title {
+    font-family: var(--font-display, 'Playfair Display', serif);
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #2a2520;
+    margin-bottom: 0.5rem;
+}
+
+.booking-success-content .success-message {
+    font-size: 0.95rem;
+    color: #6b6560;
+    margin-bottom: 1.5rem;
+}
+
+.booking-confirmed-details {
+    background: #faf8f5;
+    border: 1px solid #e8e3dc;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.confirmed-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.45rem 0;
+    font-size: 0.9rem;
+    border-bottom: 1px dashed #e8e3dc;
+}
+
+.confirmed-detail-row:last-child {
+    border-bottom: none;
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+    font-size: 1rem;
+}
+
+.confirmed-detail-row span {
+    color: #6b6560;
+}
+
+.confirmed-detail-row strong {
+    color: #2a2520;
+    font-weight: 600;
+}
+
+.confirmed-detail-row strong.highlight {
+    color: var(--cta-red, #b8463f);
+    font-size: 1.15rem;
+}
+
+.booking-success-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.btn-view-bookings {
+    padding: 0.85rem 2rem;
+    background: linear-gradient(135deg, #d4a59a 0%, #c89b8e 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: var(--transition-fast, all 0.2s ease);
+}
+
+.btn-view-bookings:hover {
+    background: linear-gradient(135deg, #c28f83 0%, #b88577 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(212, 165, 154, 0.35);
+}
+
+/* Placeholder image styling */
+.bookora-placeholder-image {
+    object-fit: cover;
+    background: #2a2520;
+}
+
+/* Reduced motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .bookora-spinner {
+        animation: bookora-pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes bookora-pulse {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 1; }
+    }
+    .splash-progress-bar::after {
+        animation: none;
+        width: 100%;
+        opacity: 0.6;
+    }
+    .bookora-skeleton {
+        animation: none;
+        background: #ede8e3;
+    }
+}
+
