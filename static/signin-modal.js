@@ -142,30 +142,78 @@ function handleImageError(img, type = 'poster') {
 // MOBILE DRAWER & NAVBAR CONTROLLER
 // ==========================================
 
-function closeMobileDrawer() {
+// Strict Deterministic State Machine
+// States: 'CLOSED', 'OPENING', 'OPEN', 'CLOSING'
+let mobileDrawerState = 'CLOSED';
+let lastMobileDrawerTransition = 0;
+let mobileDrawerCloseTimeout = null;
+
+function isMobileDrawerOpen() {
+    return mobileDrawerState === 'OPEN' || mobileDrawerState === 'OPENING';
+}
+
+function isMobileDrawerTransitioning() {
+    return mobileDrawerState === 'OPENING' || mobileDrawerState === 'CLOSING';
+}
+
+function closeMobileDrawer(immediate = false) {
+    if (mobileDrawerState === 'CLOSED' || mobileDrawerState === 'CLOSING') return;
+
+    mobileDrawerState = 'CLOSING';
+    lastMobileDrawerTransition = Date.now();
+
     const navbar = document.querySelector('.navbar-bookora');
     const navbarContent = document.getElementById('navbarContent');
     const toggler = document.querySelector('.navbar-toggler');
     const backdrop = document.getElementById('mobileNavBackdrop');
 
-    if (navbarContent) {
-        navbarContent.classList.remove('show');
-    }
-    if (navbar) {
-        navbar.classList.remove('menu-open');
-    }
     if (toggler) {
         toggler.setAttribute('aria-expanded', 'false');
         toggler.setAttribute('aria-label', 'Open navigation');
+    }
+    if (navbar) {
+        navbar.classList.remove('menu-open');
     }
     if (backdrop) {
         backdrop.classList.remove('active');
     }
     document.body.style.overflow = '';
     document.body.classList.remove('mobile-menu-open');
+
+    const finishClosing = () => {
+        if (navbarContent) {
+            navbarContent.classList.remove('show');
+            navbarContent.classList.remove('closing');
+        }
+        mobileDrawerState = 'CLOSED';
+        lastMobileDrawerTransition = Date.now();
+        mobileDrawerCloseTimeout = null;
+    };
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (immediate || prefersReducedMotion || !navbarContent) {
+        finishClosing();
+    } else {
+        navbarContent.classList.add('closing');
+        mobileDrawerCloseTimeout = setTimeout(finishClosing, 200);
+    }
 }
 
 function openMobileDrawer() {
+    if (mobileDrawerState === 'OPEN' || mobileDrawerState === 'OPENING') return;
+    const now = Date.now();
+    // Guard against immediate re-opening within 300ms cooldown
+    if (now - lastMobileDrawerTransition < 300) return;
+
+    if (mobileDrawerCloseTimeout) {
+        clearTimeout(mobileDrawerCloseTimeout);
+        mobileDrawerCloseTimeout = null;
+    }
+
+    mobileDrawerState = 'OPENING';
+    lastMobileDrawerTransition = now;
+
     const navbar = document.querySelector('.navbar-bookora');
     const navbarContent = document.getElementById('navbarContent');
     const toggler = document.querySelector('.navbar-toggler');
@@ -176,10 +224,15 @@ function openMobileDrawer() {
         backdrop.id = 'mobileNavBackdrop';
         backdrop.className = 'mobile-nav-backdrop';
         document.body.appendChild(backdrop);
-        backdrop.addEventListener('click', closeMobileDrawer);
+        backdrop.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            closeMobileDrawer();
+        });
     }
 
     if (navbarContent) {
+        navbarContent.classList.remove('closing');
         navbarContent.classList.add('show');
     }
     if (navbar) {
@@ -193,11 +246,16 @@ function openMobileDrawer() {
     backdrop.classList.add('active');
     document.body.style.overflow = 'hidden';
     document.body.classList.add('mobile-menu-open');
+
+    setTimeout(() => {
+        if (mobileDrawerState === 'OPENING') {
+            mobileDrawerState = 'OPEN';
+        }
+    }, 220);
 }
 
 function toggleMobileDrawer() {
-    const navbarContent = document.getElementById('navbarContent');
-    if (navbarContent && navbarContent.classList.contains('show')) {
+    if (isMobileDrawerOpen() || mobileDrawerState === 'CLOSING') {
         closeMobileDrawer();
     } else {
         openMobileDrawer();
@@ -218,8 +276,8 @@ function initMobileNavbar() {
         if (!ticking) {
             window.requestAnimationFrame(() => {
                 const currentScrollY = window.scrollY || window.pageYOffset || 0;
-                const navbarContent = document.getElementById('navbarContent');
-                const isMenuOpen = (navbarContent && navbarContent.classList.contains('show')) ||
+                const isMenuOpen = isMobileDrawerOpen() ||
+                                   isMobileDrawerTransitioning() ||
                                    document.body.classList.contains('mobile-menu-open');
 
                 // On desktop, never hide navbar
@@ -230,7 +288,7 @@ function initMobileNavbar() {
                     return;
                 }
 
-                // If mobile drawer is open, do not hide navbar
+                // If mobile drawer is open or transitioning, do not hide navbar
                 if (isMenuOpen) {
                     navbar.classList.remove('navbar-hidden');
                     lastScrollY = currentScrollY;
@@ -265,11 +323,40 @@ function initMobileNavbar() {
     const togglers = document.querySelectorAll('.navbar-toggler');
     togglers.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            if (window.innerWidth <= 991.98) {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleMobileDrawer();
+            if (window.innerWidth > 991.98) return;
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+
+            const now = Date.now();
+            // Discard duplicate events / synthetic clicks during transition or cooldown
+            if (isMobileDrawerTransitioning() || now - lastMobileDrawerTransition < 300) {
+                return;
             }
+
+            // If menu is open OR close X icon was clicked: dedicated CLOSE operation
+            if (isMobileDrawerOpen() || e.target.closest('.navbar-toggler-close')) {
+                closeMobileDrawer();
+            } else {
+                openMobileDrawer();
+            }
+        });
+    });
+
+    // Dedicated listener for the close X icon
+    const closeIcons = document.querySelectorAll('.navbar-toggler-close');
+    closeIcons.forEach(icon => {
+        icon.addEventListener('click', (e) => {
+            if (window.innerWidth > 991.98) return;
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+
+            const now = Date.now();
+            if (isMobileDrawerTransitioning() || now - lastMobileDrawerTransition < 300) {
+                return;
+            }
+            closeMobileDrawer();
         });
     });
 
@@ -278,14 +365,14 @@ function initMobileNavbar() {
     drawerLinks.forEach(item => {
         item.addEventListener('click', () => {
             if (window.innerWidth <= 991.98) {
-                closeMobileDrawer();
+                closeMobileDrawer(true);
             }
         });
     });
 
     // Close drawer with Escape key
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
+        if (e.key === 'Escape' && isMobileDrawerOpen()) {
             closeMobileDrawer();
         }
     });
@@ -293,7 +380,7 @@ function initMobileNavbar() {
     // Handle resize: restore desktop state if viewport grows
     window.addEventListener('resize', () => {
         if (window.innerWidth > 991.98) {
-            closeMobileDrawer();
+            closeMobileDrawer(true);
             navbar.classList.remove('navbar-hidden');
         }
     });

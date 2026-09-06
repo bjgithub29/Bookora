@@ -128,6 +128,9 @@ body {
     align-items: center;
     justify-content: center;
     transition: var(--transition-micro);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    cursor: pointer;
 }
 
 .navbar-toggler:hover {
@@ -1106,6 +1109,12 @@ body {
         animation: bookoraDrawerIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
+    .navbar-bookora .navbar-collapse.closing {
+        display: block !important;
+        animation: bookoraDrawerOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        pointer-events: none;
+    }
+
     @keyframes bookoraDrawerIn {
         from {
             opacity: 0;
@@ -1114,6 +1123,17 @@ body {
         to {
             opacity: 1;
             transform: translateY(0) scale(1);
+        }
+    }
+
+    @keyframes bookoraDrawerOut {
+        from {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-8px) scale(0.98);
         }
     }
 
@@ -2213,6 +2233,10 @@ body {
     }
     .navbar-bookora .navbar-collapse.show {
         animation: none !important;
+    }
+    .navbar-bookora .navbar-collapse.closing {
+        animation: none !important;
+        display: none !important;
     }
 }
 
