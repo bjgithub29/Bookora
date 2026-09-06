@@ -89,14 +89,16 @@ copy .env.example .env
 cp .env.example .env
 ```
 
-Open `.env` in a text editor and configure your local settings:
+Open `.env` in a text editor and configure your environment settings:
+
+### Option A: Local Development (XAMPP MySQL/MariaDB)
 
 ```ini
 # Generate a secret key: python -c "import secrets; print(secrets.token_hex(32))"
 SECRET_KEY=your-random-generated-secret-key
 DEBUG=True
 
-# Database (matches standard XAMPP defaults)
+# Database (matches standard local XAMPP defaults)
 DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
@@ -111,7 +113,32 @@ EMAIL_PASSWORD=your-16-character-app-password
 EMAIL_FROM=your-email@gmail.com
 ```
 
-> **Security Note:** Never commit `.env` to Git. It is excluded by `.gitignore`.
+### Option B: Cloud Production (Aiven MySQL 8.4+)
+
+```ini
+SECRET_KEY=your-random-generated-secret-key
+DEBUG=False
+
+# Aiven MySQL connection parameters
+DB_HOST=bookora-db-your-service.d.aivencloud.com
+DB_PORT=15053
+DB_USER=avnadmin
+DB_PASSWORD=your-production-database-password
+DB_NAME=bookora
+DB_POOL_SIZE=5
+
+# Database TLS/SSL Configuration (Required)
+# Keep DB_SSL_VERIFY_CERT=True in production.
+# Option 1 (Environment variable): Set DB_SSL_CA_CERT to the PEM text in your PaaS dashboard
+# Option 2 (File path): Point DB_SSL_CA to ca.pem (local) or /etc/secrets/ca.pem (Render Secret Files)
+DB_SSL_CA=ca.pem
+DB_SSL_VERIFY_CERT=True
+```
+
+> **Security & Deployment Notes:**
+> - Never commit `.env` or any real passwords to Git. Both `.env` and `*.pem` are excluded by `.gitignore`.
+> - The CA certificate (`ca.pem`) must **NEVER** be committed to GitHub.
+> - For Render/PaaS deployments, supply the CA certificate either via the `DB_SSL_CA_CERT` environment variable or through Render's **Secret Files** feature (mounted at `/etc/secrets/ca.pem`).
 
 ---
 

@@ -21,6 +21,7 @@ import mysql.connector
 from mysql.connector import pooling
 from datetime import datetime, timedelta, date
 import os
+import tempfile
 import re
 import time
 import json
@@ -196,10 +197,46 @@ if _db_password is None or _db_password == '':
     _db_password = ''
 DB_CONFIG['password'] = _db_password
 
+def _resolve_ssl_ca():
+    """Resolve the SSL CA certificate file path.
+
+    Supports:
+      1. A path to an existing certificate file via DB_SSL_CA (e.g. 'ca.pem'
+         locally or '/etc/secrets/ca.pem' via Render Secret Files).
+      2. Direct PEM certificate content via DB_SSL_CA_CERT or DB_SSL_CA_CONTENT
+         (or DB_SSL_CA containing the PEM text directly). The certificate is
+         written to a temporary file so mysql-connector can verify against it
+         without requiring ca.pem to be committed to version control.
+    """
+    ca_path = os.getenv('DB_SSL_CA')
+    ca_content = os.getenv('DB_SSL_CA_CERT') or os.getenv('DB_SSL_CA_CONTENT')
+
+    if ca_path and 'BEGIN CERTIFICATE' in ca_path:
+        ca_content = ca_path
+        ca_path = None
+
+    if ca_content and ca_content.strip():
+        clean_pem = ca_content.replace('\\n', '\n').strip() + '\n'
+        target_path = os.path.join(tempfile.gettempdir(), 'bookora-aiven-ca.pem')
+        with open(target_path, 'w', encoding='utf-8') as f:
+            f.write(clean_pem)
+        return target_path
+
+    if ca_path:
+        if not os.path.isabs(ca_path):
+            base_dir = os.path.abspath(os.path.dirname(__file__))
+            candidate = os.path.join(base_dir, ca_path)
+            if os.path.exists(candidate):
+                return candidate
+        return ca_path
+
+    return None
+
+
 # Optional TLS to a hosted database, configured entirely through env vars. When
 # none of these are set the connection behaves exactly as before, so local XAMPP
 # is unaffected.
-_db_ssl_ca = os.getenv('DB_SSL_CA')
+_db_ssl_ca = _resolve_ssl_ca()
 if _db_ssl_ca:
     DB_CONFIG['ssl_ca'] = _db_ssl_ca
     DB_CONFIG['ssl_verify_cert'] = _env_bool('DB_SSL_VERIFY_CERT', True)
