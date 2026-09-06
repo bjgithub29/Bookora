@@ -2,7 +2,7 @@
 // SIGN-IN MODAL FUNCTIONALITY
 // ==========================================
 
-console.log('🔵 signin-modal.js loading...');
+console.log('signin-modal.js loading...');
 
 // ==========================================
 // AUTH STATE MANAGEMENT
@@ -111,19 +111,22 @@ document.addEventListener('click', (e) => {
 
 // Navigate to profile page
 function navigateToProfile(e) {
-    e.preventDefault();
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof closeMobileDrawer === 'function') closeMobileDrawer();
     window.location.href = '/profile';
 }
 
 // Navigate to bookings page
 function navigateToBookings(e) {
-    e.preventDefault();
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof closeMobileDrawer === 'function') closeMobileDrawer();
     window.location.href = '/my-bookings';
 }
 
 // Navigate to saved movies page
 function navigateToSavedMovies(e) {
-    e.preventDefault();
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof closeMobileDrawer === 'function') closeMobileDrawer();
     window.location.href = '/saved-movies';
 }
 
@@ -133,6 +136,167 @@ function handleImageError(img, type = 'poster') {
     img.onerror = null; // Prevent recursion
     img.src = type === 'banner' ? '/static/banners/placeholder.svg' : '/static/posters/placeholder.svg';
     img.classList.add('bookora-placeholder-image');
+}
+
+// ==========================================
+// MOBILE DRAWER & NAVBAR CONTROLLER
+// ==========================================
+
+function closeMobileDrawer() {
+    const navbar = document.querySelector('.navbar-bookora');
+    const navbarContent = document.getElementById('navbarContent');
+    const toggler = document.querySelector('.navbar-toggler');
+    const backdrop = document.getElementById('mobileNavBackdrop');
+
+    if (navbarContent) {
+        navbarContent.classList.remove('show');
+    }
+    if (navbar) {
+        navbar.classList.remove('menu-open');
+    }
+    if (toggler) {
+        toggler.setAttribute('aria-expanded', 'false');
+        toggler.setAttribute('aria-label', 'Open navigation');
+    }
+    if (backdrop) {
+        backdrop.classList.remove('active');
+    }
+    document.body.style.overflow = '';
+    document.body.classList.remove('mobile-menu-open');
+}
+
+function openMobileDrawer() {
+    const navbar = document.querySelector('.navbar-bookora');
+    const navbarContent = document.getElementById('navbarContent');
+    const toggler = document.querySelector('.navbar-toggler');
+    let backdrop = document.getElementById('mobileNavBackdrop');
+
+    if (!backdrop) {
+        backdrop = document.createElement('div');
+        backdrop.id = 'mobileNavBackdrop';
+        backdrop.className = 'mobile-nav-backdrop';
+        document.body.appendChild(backdrop);
+        backdrop.addEventListener('click', closeMobileDrawer);
+    }
+
+    if (navbarContent) {
+        navbarContent.classList.add('show');
+    }
+    if (navbar) {
+        navbar.classList.add('menu-open');
+        navbar.classList.remove('navbar-hidden');
+    }
+    if (toggler) {
+        toggler.setAttribute('aria-expanded', 'true');
+        toggler.setAttribute('aria-label', 'Close navigation');
+    }
+    backdrop.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('mobile-menu-open');
+}
+
+function toggleMobileDrawer() {
+    const navbarContent = document.getElementById('navbarContent');
+    if (navbarContent && navbarContent.classList.contains('show')) {
+        closeMobileDrawer();
+    } else {
+        openMobileDrawer();
+    }
+}
+
+function initMobileNavbar() {
+    const navbar = document.querySelector('.navbar-bookora');
+    if (!navbar) return;
+
+    // Mobile scroll-hide with hysteresis & top threshold
+    let lastScrollY = window.scrollY || window.pageYOffset || 0;
+    let ticking = false;
+    const SCROLL_THRESHOLD = 10;
+    const TOP_THRESHOLD = 60;
+
+    function handleScroll() {
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                const currentScrollY = window.scrollY || window.pageYOffset || 0;
+                const navbarContent = document.getElementById('navbarContent');
+                const isMenuOpen = (navbarContent && navbarContent.classList.contains('show')) ||
+                                   document.body.classList.contains('mobile-menu-open');
+
+                // On desktop, never hide navbar
+                if (window.innerWidth > 991.98) {
+                    navbar.classList.remove('navbar-hidden');
+                    lastScrollY = currentScrollY;
+                    ticking = false;
+                    return;
+                }
+
+                // If mobile drawer is open, do not hide navbar
+                if (isMenuOpen) {
+                    navbar.classList.remove('navbar-hidden');
+                    lastScrollY = currentScrollY;
+                    ticking = false;
+                    return;
+                }
+
+                // Within top zone: always reveal
+                if (currentScrollY <= TOP_THRESHOLD) {
+                    navbar.classList.remove('navbar-hidden');
+                } else {
+                    const diff = currentScrollY - lastScrollY;
+                    if (diff > SCROLL_THRESHOLD) {
+                        // Scrolling DOWN: hide
+                        navbar.classList.add('navbar-hidden');
+                    } else if (diff < -SCROLL_THRESHOLD) {
+                        // Scrolling UP: reveal
+                        navbar.classList.remove('navbar-hidden');
+                    }
+                }
+
+                lastScrollY = Math.max(0, currentScrollY);
+                ticking = false;
+            });
+            ticking = true;
+        }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // Handle toggler button clicks on mobile
+    const togglers = document.querySelectorAll('.navbar-toggler');
+    togglers.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (window.innerWidth <= 991.98) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleMobileDrawer();
+            }
+        });
+    });
+
+    // Close drawer when clicking nav links or buttons inside the drawer on mobile
+    const drawerLinks = document.querySelectorAll('#navbarContent a, #navbarContent button');
+    drawerLinks.forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth <= 991.98) {
+                closeMobileDrawer();
+            }
+        });
+    });
+
+    // Close drawer with Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeMobileDrawer();
+        }
+    });
+
+    // Handle resize: restore desktop state if viewport grows
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 991.98) {
+            closeMobileDrawer();
+            navbar.classList.remove('navbar-hidden');
+        }
+    });
 }
 
 // Centralized, idempotent logout handler
@@ -147,6 +311,7 @@ function handleLogout(e) {
         // Already logged out: close dropdown and redirect if on a protected page
         const dropdown = document.getElementById('profileDropdown') || document.querySelector('.profile-dropdown');
         if (dropdown) dropdown.classList.remove('active');
+        if (typeof closeMobileDrawer === 'function') closeMobileDrawer();
         if (window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
             window.location.href = '/';
         }
@@ -169,10 +334,13 @@ function handleLogout(e) {
         otpTimer = null;
     }
     
-    // Close dropdown
+    // Close dropdown & mobile drawer
     const dropdown = document.getElementById('profileDropdown') || document.querySelector('.profile-dropdown');
     if (dropdown) {
         dropdown.classList.remove('active');
+    }
+    if (typeof closeMobileDrawer === 'function') {
+        closeMobileDrawer();
     }
     
     // Always redirect to homepage
@@ -194,6 +362,7 @@ function handleLogout(e) {
 document.addEventListener('DOMContentLoaded', () => {
     // Update auth UI based on localStorage
     updateAuthUI();
+    initMobileNavbar();
     
     // Ensure modal is closed and reset on page load
     const modal = document.getElementById('signinModal');
@@ -250,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Open modal
 function openSignInModal(context = 'default') {
-    console.log('🟢 openSignInModal() called with context:', context);
+    console.log('openSignInModal() called with context:', context);
     
     // Clear any leftover state from previous sessions
     sessionStorage.removeItem('tempEmail');
@@ -259,7 +428,7 @@ function openSignInModal(context = 'default') {
     console.log('Modal element:', modal);
     
     if (!modal) {
-        console.error('❌ Modal element #signinModal not found!');
+        console.error('Modal element #signinModal not found!');
         return;
     }
     
@@ -281,7 +450,7 @@ function openSignInModal(context = 'default') {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden'; // Prevent background scroll
     
-    console.log('✅ Modal should be visible now');
+    console.log('Modal should be visible now');
     
     // Always reset to auth choice screen on open
     showAuthChoiceScreen();
@@ -900,7 +1069,7 @@ async function saveUserProfile(name, email, phone, primary_contact_type) {
         const data = await response.json();
         
         if (data.success) {
-            console.log('✓ Profile saved successfully');
+            console.log('Profile saved successfully');
             
             showSuccessState('Welcome to BOOKORA!', `Hi ${name}! Let's find you a movie...`);
             
@@ -915,7 +1084,7 @@ async function saveUserProfile(name, email, phone, primary_contact_type) {
             submitBtn.textContent = 'Complete Profile';
         }
     } catch (error) {
-        console.error('✗ Profile save error:', error);
+        console.error('Profile save error:', error);
         showInlineError('Cannot connect to server');
         submitBtn.disabled = false;
         submitBtn.textContent = 'Complete Profile';
@@ -1040,6 +1209,6 @@ window.addEventListener('pageshow', () => {
     updateAuthUI();
 });
 
-console.log('✅ signin-modal.js loaded completely');
-console.log('✅ openSignInModal is:', typeof openSignInModal);
+console.log('signin-modal.js loaded completely');
+console.log('openSignInModal is:', typeof openSignInModal);
 

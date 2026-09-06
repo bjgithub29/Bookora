@@ -269,7 +269,7 @@ async function toggleBookmark() {
         const data = await response.json();
         
         if (data.success) {
-            showToast(isMovieSaved ? '✓ Saved to your watchlist' : 'Removed from watchlist');
+            showToast(isMovieSaved ? 'Saved to your watchlist' : 'Removed from watchlist');
         } else {
             // Revert on error
             isMovieSaved = !isMovieSaved;

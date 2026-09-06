@@ -39,29 +39,43 @@
                 <span id="navbarTitleTextScrolled">Movie Title</span>
             </div>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
-                <span class="navbar-toggler-icon"></span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Open navigation">
+                <i class="fas fa-bars navbar-toggler-open"></i>
+                <i class="fas fa-times navbar-toggler-close"></i>
             </button>
             
             <div class="collapse navbar-collapse" id="navbarContent">
                 <!-- Menu Items (hidden when scrolled) -->
                 <ul class="navbar-nav me-auto ms-4" id="navbarMenu">
                     <li class="nav-item">
-                        <a class="nav-link" href="/#movies">Movies</a>
+                        <a class="nav-link" href="/#movies">
+                            <i class="fas fa-film nav-icon"></i>
+                            <span>Movies</span>
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="openEventsModal(event)">Events</a>
+                        <a class="nav-link" href="#" onclick="openEventsModal(event)">
+                            <i class="fas fa-calendar-alt nav-icon"></i>
+                            <span>Events</span>
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="openOffersModal(event)">Offers</a>
+                        <a class="nav-link" href="#" onclick="openOffersModal(event)">
+                            <i class="fas fa-tags nav-icon"></i>
+                            <span>Offers</span>
+                        </a>
                     </li>
                 </ul>
+                
+                <div class="mobile-menu-divider"></div>
                 
                 <!-- City Display (hidden when scrolled) -->
                 <div class="city-display" id="navbarCity">
                     <i class="fas fa-map-marker-alt"></i>
                     <span>Ahmedabad, Gujarat</span>
                 </div>
+                
+                <div class="mobile-menu-divider"></div>
                 
                 <!-- Auth State Container: shows login button OR profile dropdown (hidden when scrolled) -->
                 <div id="authContainer" class="navbar-auth" style="display: flex; margin-left: 1.5rem;">

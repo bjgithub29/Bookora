@@ -100,6 +100,84 @@ body {
     z-index: 1000;
     padding: 1rem 0;
     box-shadow: 0 2px 12px var(--shadow-soft);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease, box-shadow 0.3s ease;
+    will-change: transform;
+}
+
+.navbar-bookora.navbar-hidden {
+    transform: translateY(-100%);
+    box-shadow: none;
+}
+
+@media (min-width: 992px) {
+    .navbar-bookora.navbar-hidden {
+        transform: translateY(0) !important;
+    }
+    .navbar-bookora .nav-link .nav-icon {
+        display: none;
+    }
+}
+
+.navbar-toggler {
+    border: 1px solid var(--border-light);
+    padding: 0.4rem 0.65rem;
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-micro);
+}
+
+.navbar-toggler:hover {
+    border-color: var(--border-pink);
+    color: var(--accent-pink-hover);
+}
+
+.navbar-toggler:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-pink-light);
+}
+
+.navbar-toggler .navbar-toggler-open {
+    display: inline-block;
+    font-size: 1.15rem;
+}
+
+.navbar-toggler .navbar-toggler-close {
+    display: none;
+    font-size: 1.15rem;
+}
+
+.navbar-toggler[aria-expanded="true"] .navbar-toggler-open,
+.navbar-bookora.menu-open .navbar-toggler-open {
+    display: none !important;
+}
+
+.navbar-toggler[aria-expanded="true"] .navbar-toggler-close,
+.navbar-bookora.menu-open .navbar-toggler-close {
+    display: inline-block !important;
+}
+
+/* Backdrop overlay behind mobile drawer */
+.mobile-nav-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(42, 37, 32, 0.3);
+    backdrop-filter: blur(2px);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.mobile-nav-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .navbar-bookora .navbar-brand {
@@ -998,6 +1076,7 @@ body {
 
     /* Templates set padding inline on .container-fluid */
     .navbar-bookora .container-fluid {
+        position: relative;
         padding: 0 1rem !important;
     }
 
@@ -1005,46 +1084,247 @@ body {
         padding: 0.65rem 0;
     }
 
+    /* Floating compact mobile drawer */
     .navbar-bookora .navbar-collapse {
-        padding: 0.5rem 0 0.25rem;
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 1rem;
+        left: 1rem;
+        max-width: 380px;
+        margin-left: auto;
+        background: #ffffff;
+        border: 1px solid var(--border-light);
+        border-radius: 16px;
+        box-shadow: 0 16px 36px rgba(42, 37, 32, 0.14), 0 2px 6px rgba(42, 37, 32, 0.04);
+        padding: 1.1rem 1.15rem;
+        z-index: 1050;
+        display: none;
     }
 
-    /* Stacked menu: kill the horizontal centering/offsets */
+    .navbar-bookora .navbar-collapse.show {
+        display: block !important;
+        animation: bookoraDrawerIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes bookoraDrawerIn {
+        from {
+            opacity: 0;
+            transform: translateY(-8px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    /* Mobile Nav links list */
     .navbar-bookora .navbar-nav {
-        align-items: flex-start !important;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        margin: 0 !important;
+        padding: 0;
+        list-style: none;
     }
 
     .navbar-bookora .nav-link {
-        margin: 0.35rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.65rem 0.85rem !important;
+        margin: 0 !important;
+        border-radius: 8px;
+        color: var(--text-primary) !important;
+        font-weight: 500;
+        font-size: 0.95rem;
+        transition: background-color 0.15s ease, color 0.15s ease;
     }
 
+    .navbar-bookora .nav-link::after {
+        display: none;
+    }
+
+    .navbar-bookora .nav-link:hover,
+    .navbar-bookora .nav-link:active {
+        background-color: var(--accent-pink-light);
+        color: var(--accent-pink-hover) !important;
+    }
+
+    .navbar-bookora .nav-link .nav-icon {
+        display: inline-flex;
+        width: 20px;
+        align-items: center;
+        justify-content: center;
+        color: var(--accent-pink);
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    /* Drawer location row */
     .navbar-bookora .city-display {
-        margin: 0.5rem 0;
-        width: -moz-fit-content;
-        width: fit-content;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        width: 100%;
+        margin: 0.75rem 0;
+        padding: 0.65rem 0.85rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        color: var(--text-secondary);
+        font-size: 0.88rem;
+        font-weight: 500;
+        box-shadow: none;
     }
 
+    .navbar-bookora .city-display i {
+        color: var(--accent-pink);
+        font-size: 0.95rem;
+        margin-right: 0;
+    }
+
+    /* Mobile drawer dividers */
+    .mobile-menu-divider {
+        height: 1px;
+        background: var(--border-light);
+        margin: 0.75rem 0;
+    }
+
+    /* Mobile auth section */
     .navbar-bookora .navbar-auth,
     .navbar-bookora .nav-item.profile-section,
-    .navbar-bookora .nav-item.auth-buttons {
-        margin-left: 0 !important;
-        margin-top: 0.5rem;
+    .navbar-bookora .nav-item.auth-buttons,
+    .navbar-bookora #authContainer {
+        margin: 0 !important;
+        padding-top: 0.25rem;
+        width: 100%;
     }
 
-    /* Dropdown would run off the left edge anchored to the right */
+    .navbar-bookora .auth-buttons {
+        width: 100%;
+    }
+
+    .navbar-bookora .btn-signup {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.7rem 1.25rem;
+        font-size: 0.95rem;
+        border-radius: 8px;
+        background: var(--accent-pink);
+        color: white;
+        border: none;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition-micro);
+    }
+
+    .navbar-bookora .btn-signup:hover {
+        background: var(--accent-pink-hover);
+    }
+
+    .navbar-bookora .btn-login {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.7rem 1.25rem;
+        font-size: 0.95rem;
+        border-radius: 8px;
+    }
+
+    /* Mobile In-drawer Profile Account View */
+    .navbar-bookora .profile-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .navbar-bookora .profile-avatar {
+        display: none; /* In drawer we show user banner instead */
+    }
+
     .navbar-bookora .profile-dropdown {
-        left: 0;
-        right: auto;
-        width: min(280px, calc(100vw - 3rem));
+        position: static !important;
+        display: flex !important;
+        flex-direction: column;
+        width: 100% !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        z-index: auto !important;
     }
 
-    .navbar-toggler {
-        border-color: var(--border-light);
-        padding: 0.35rem 0.6rem;
+    .navbar-bookora .profile-dropdown-header {
+        padding: 0.65rem 0.85rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        margin-bottom: 0.6rem;
     }
 
-    .navbar-toggler:focus {
-        box-shadow: 0 0 0 3px var(--accent-pink-light);
+    .navbar-bookora .profile-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+    }
+
+    .navbar-bookora .profile-contact {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        word-break: break-all;
+    }
+
+    .navbar-bookora .profile-dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.6rem 0.85rem;
+        border-radius: 8px;
+        color: var(--text-primary);
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .navbar-bookora .profile-dropdown-item i {
+        width: 20px;
+        text-align: center;
+        color: var(--accent-pink);
+    }
+
+    .navbar-bookora .profile-dropdown-item:hover,
+    .navbar-bookora .profile-dropdown-item:active {
+        background-color: var(--accent-pink-light);
+        color: var(--accent-pink-hover);
+    }
+
+    .navbar-bookora .profile-dropdown-item.logout-item {
+        margin-top: 0.35rem;
+        color: var(--cta-red);
+    }
+
+    .navbar-bookora .profile-dropdown-item.logout-item i {
+        color: var(--cta-red);
+    }
+
+    .navbar-bookora .profile-dropdown-item.logout-item:hover {
+        background-color: #fdeee9;
+    }
+
+    .navbar-bookora .profile-dropdown-divider {
+        height: 1px;
+        background: var(--border-light);
+        margin: 0.5rem 0;
     }
 }
 
@@ -1690,6 +1970,23 @@ body {
     max-width: 60%;
 }
 
+/* Movie Card Skeletons */
+.bookora-skeleton-card {
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    box-shadow: 0 2px 8px var(--shadow-soft);
+}
+
+.bookora-skeleton-poster {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    background: linear-gradient(90deg, #ede8e3 25%, #f7f4f0 50%, #ede8e3 75%);
+    background-size: 200% 100%;
+    animation: bookora-shimmer 1.6s infinite ease-in-out;
+}
+
 @keyframes bookora-shimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
@@ -1910,6 +2207,12 @@ body {
     .bookora-skeleton {
         animation: none;
         background: #ede8e3;
+    }
+    .navbar-bookora {
+        transition: none !important;
+    }
+    .navbar-bookora .navbar-collapse.show {
+        animation: none !important;
     }
 }
 

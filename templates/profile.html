@@ -26,21 +26,33 @@
         <div class="container-fluid" style="padding: 0 2rem;">
             <a class="navbar-brand" href="/">Bookora</a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
-                <span class="navbar-toggler-icon"></span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Open navigation">
+                <i class="fas fa-bars navbar-toggler-open"></i>
+                <i class="fas fa-times navbar-toggler-close"></i>
             </button>
             
             <div class="collapse navbar-collapse" id="navbarContent">
-                <ul class="navbar-nav ms-auto align-items-center">
+                <ul class="navbar-nav me-auto ms-4">
                     <li class="nav-item">
-                        <div class="city-display">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <span>Ahmedabad, Gujarat</span>
-                        </div>
+                        <a class="nav-link" href="/#movies">
+                            <i class="fas fa-film nav-icon"></i>
+                            <span>Movies</span>
+                        </a>
                     </li>
-                    
+                </ul>
+                
+                <div class="mobile-menu-divider"></div>
+                
+                <div class="city-display">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>Ahmedabad, Gujarat</span>
+                </div>
+                
+                <div class="mobile-menu-divider"></div>
+                
+                <div id="authContainer" class="navbar-auth" style="display: flex; margin-left: 1.5rem;">
                     <!-- Profile Section (shown when logged in) -->
-                    <li class="nav-item profile-section" style="display: none;">
+                    <div class="profile-section" style="display: none; width: 100%;">
                         <div class="profile-container">
                             <div class="profile-avatar" onclick="toggleProfileDropdown()">
                                 <i class="fas fa-user-circle"></i>
@@ -66,13 +78,13 @@
                                 </a>
                             </div>
                         </div>
-                    </li>
+                    </div>
                     
                     <!-- Auth Buttons (shown when not logged in) -->
-                    <li class="nav-item auth-buttons">
+                    <div class="auth-buttons">
                         <button class="btn btn-login" onclick="openSignInModal()">Sign In</button>
-                    </li>
-                </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
