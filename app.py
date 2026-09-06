@@ -29,6 +29,8 @@ import secrets
 import smtplib
 import logging
 import threading
+import urllib.request
+import urllib.error
 from collections import defaultdict, deque, OrderedDict
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -127,19 +129,54 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=int(os.getenv('SESSION
 # single attacker could evade the per-IP OTP limits by spoofing the header.
 TRUST_PROXY_HEADERS = _env_bool('TRUST_PROXY_HEADERS', False)
 
-# --- Email ------------------------------------------------------------------
+# --- Email / OTP Transport --------------------------------------------------
+EMAIL_PROVIDER = os.getenv('EMAIL_PROVIDER', '').strip().lower()
+BREVO_API_KEY = os.getenv('BREVO_API_KEY')
+RESEND_API_KEY = os.getenv('RESEND_API_KEY')
+
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
 EMAIL_USER = os.getenv('EMAIL_USER')
 EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
 EMAIL_FROM = os.getenv('EMAIL_FROM', EMAIL_USER)
-if not DEBUG and not (EMAIL_USER and EMAIL_PASSWORD):
-    # Without these the entire OTP sign-in flow fails on the first request;
-    # far better to find out at boot than from users who cannot log in.
-    raise RuntimeError(
-        'EMAIL_USER and EMAIL_PASSWORD environment variables are required when '
-        'DEBUG=False (the OTP sign-in flow cannot send mail without them).'
-    )
+EMAIL_FROM_NAME = os.getenv('EMAIL_FROM_NAME', 'Bookora')
+
+
+def _get_email_provider():
+    """Determine active email transport: 'brevo', 'resend', or 'smtp'.
+
+    Precedence:
+      1. Explicit EMAIL_PROVIDER ('brevo', 'resend', 'smtp').
+      2. Inferred from present API keys (BREVO_API_KEY -> 'brevo', RESEND_API_KEY -> 'resend').
+      3. Default fallback to 'smtp' (preserves local development with Gmail).
+    """
+    provider = os.getenv('EMAIL_PROVIDER', '').strip().lower() or EMAIL_PROVIDER
+    if provider in ('brevo', 'resend', 'smtp'):
+        return provider
+    if os.getenv('BREVO_API_KEY') or BREVO_API_KEY:
+        return 'brevo'
+    if os.getenv('RESEND_API_KEY') or RESEND_API_KEY:
+        return 'resend'
+    return 'smtp'
+
+
+if not DEBUG:
+    _active_email_provider = _get_email_provider()
+    if _active_email_provider == 'brevo' and not BREVO_API_KEY:
+        raise RuntimeError(
+            'BREVO_API_KEY environment variable is required when EMAIL_PROVIDER=brevo.'
+        )
+    elif _active_email_provider == 'resend' and not RESEND_API_KEY:
+        raise RuntimeError(
+            'RESEND_API_KEY environment variable is required when EMAIL_PROVIDER=resend.'
+        )
+    elif _active_email_provider == 'smtp' and not (EMAIL_USER and EMAIL_PASSWORD):
+        raise RuntimeError(
+            'EMAIL_USER and EMAIL_PASSWORD environment variables are required when '
+            'using SMTP with DEBUG=False. In cloud environments where outbound SMTP '
+            'ports are blocked (such as Render Free), set EMAIL_PROVIDER=brevo and '
+            'BREVO_API_KEY (or RESEND_API_KEY).'
+        )
 
 # ============================================
 # DATABASE (environment-driven, pooled)
@@ -897,67 +934,188 @@ def get_seats(show_id):
 # AUTHENTICATION APIs
 # ============================================
 
-def send_email_otp(email, otp):
-    """Send OTP email using SMTP - optimized for speed"""
-    try:
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = f'Your Bookora Verification Code'
-        msg['From'] = EMAIL_FROM
-        msg['To'] = email
-        
-        html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <style>
-                body {{ font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 0; background-color: #FAF9F8; }}
-                .container {{ max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(42, 37, 32, 0.08); }}
-                .header {{ background: linear-gradient(135deg, #D4A59A 0%, #C89B8E 100%); padding: 40px 30px; text-align: center; }}
-                .header h1 {{ color: white; margin: 0; font-size: 32px; font-weight: 600; letter-spacing: 1px; }}
-                .content {{ padding: 40px 30px; }}
-                .otp-box {{ background: #FAF9F8; border: 2px dashed #D4A59A; border-radius: 8px; padding: 30px; text-align: center; margin: 30px 0; }}
-                .otp-code {{ font-size: 42px; font-weight: 700; color: #D4A59A; letter-spacing: 12px; margin: 0; }}
-                .message {{ color: #2A2520; font-size: 16px; line-height: 1.6; margin: 20px 0; }}
-                .footer {{ background: #FAF9F8; padding: 20px 30px; text-align: center; color: #8B7E74; font-size: 13px; }}
-                .brand {{ color: #D4A59A; font-weight: 600; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🎬 BOOKORA</h1>
-                </div>
-                <div class="content">
-                    <p class="message">Hello!</p>
-                    <p class="message">Your One-Time Password (OTP) to verify your account is:</p>
-                    <div class="otp-box">
-                        <p class="otp-code">{otp}</p>
-                    </div>
-                    <p class="message">This code is valid for <strong>{OTP_TTL_MINUTES} minutes</strong>. Please do not share it with anyone.</p>
-                    <p class="message">If you didn't request this code, please ignore this email.</p>
-                </div>
-                <div class="footer">
-                    <p>© 2026 <span class="brand">Bookora</span> | Your Premium Movie Booking Experience</p>
-                </div>
+def _build_otp_html(otp):
+    """Render the branded HTML email body for Bookora OTP verification."""
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 0; background-color: #FAF9F8; }}
+        .container {{ max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(42, 37, 32, 0.08); }}
+        .header {{ background: linear-gradient(135deg, #D4A59A 0%, #C89B8E 100%); padding: 40px 30px; text-align: center; }}
+        .header h1 {{ color: white; margin: 0; font-size: 32px; font-weight: 600; letter-spacing: 1px; }}
+        .content {{ padding: 40px 30px; }}
+        .otp-box {{ background: #FAF9F8; border: 2px dashed #D4A59A; border-radius: 8px; padding: 30px; text-align: center; margin: 30px 0; }}
+        .otp-code {{ font-size: 42px; font-weight: 700; color: #D4A59A; letter-spacing: 12px; margin: 0; }}
+        .message {{ color: #2A2520; font-size: 16px; line-height: 1.6; margin: 20px 0; }}
+        .footer {{ background: #FAF9F8; padding: 20px 30px; text-align: center; color: #8B7E74; font-size: 13px; }}
+        .brand {{ color: #D4A59A; font-weight: 600; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 BOOKORA</h1>
+        </div>
+        <div class="content">
+            <p class="message">Hello!</p>
+            <p class="message">Your One-Time Password (OTP) to verify your account is:</p>
+            <div class="otp-box">
+                <p class="otp-code">{otp}</p>
             </div>
-        </body>
-        </html>
-        """
-        
-        msg.attach(MIMEText(html, 'html'))
-        
-        # Optimized timeout - 5 seconds max for faster response
-        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT, timeout=5) as server:
-            server.starttls()
-            server.login(EMAIL_USER, EMAIL_PASSWORD)
-            server.send_message(msg)
-        
-        # Address is masked: this line runs on the success path of every sign-in,
-        # so logging it in full would build a plaintext roster of user emails.
-        logger.info('OTP email sent to %s', mask_email(email))
-        return True
+            <p class="message">This code is valid for <strong>{OTP_TTL_MINUTES} minutes</strong>. Please do not share it with anyone.</p>
+            <p class="message">If you didn't request this code, please ignore this email.</p>
+        </div>
+        <div class="footer">
+            <p>© 2026 <span class="brand">Bookora</span> | Your Premium Movie Booking Experience</p>
+        </div>
+    </div>
+</body>
+</html>"""
+
+
+def _build_otp_text(otp):
+    """Render plain-text fallback body for OTP verification."""
+    return (
+        f"Hello!\n\n"
+        f"Your One-Time Password (OTP) to verify your Bookora account is: {otp}\n\n"
+        f"This code is valid for {OTP_TTL_MINUTES} minutes. Please do not share it with anyone.\n"
+        f"If you didn't request this code, please ignore this email.\n\n"
+        f"© 2026 Bookora | Your Premium Movie Booking Experience\n"
+    )
+
+
+def _send_email_brevo(email, otp, subject, html_content, text_content):
+    """Send OTP email via Brevo (Sendinblue) HTTPS REST API (port 443)."""
+    api_key = os.getenv('BREVO_API_KEY') or BREVO_API_KEY
+    if not api_key:
+        logger.error("Brevo transport selected but BREVO_API_KEY is not set")
+        return False
+
+    sender_email = os.getenv('EMAIL_FROM') or EMAIL_FROM or os.getenv('EMAIL_USER') or EMAIL_USER
+    if not sender_email:
+        logger.error("Brevo transport requires EMAIL_FROM or EMAIL_USER as the sender address")
+        return False
+
+    from_name = os.getenv('EMAIL_FROM_NAME') or EMAIL_FROM_NAME or 'Bookora'
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "accept": "application/json",
+        "api-key": api_key,
+        "content-type": "application/json",
+    }
+    payload = {
+        "sender": {
+            "name": from_name,
+            "email": sender_email,
+        },
+        "to": [{"email": email}],
+        "subject": subject,
+        "htmlContent": html_content,
+        "textContent": text_content,
+    }
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers=headers,
+        method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            return 200 <= response.status < 300
+    except urllib.error.HTTPError as err:
+        err_body = err.read().decode("utf-8", errors="replace")[:300]
+        logger.error("Brevo API HTTP %s error: %s", err.code, err_body)
+        return False
+    except urllib.error.URLError as err:
+        logger.error("Brevo API network error: %s", err.reason)
+        return False
+
+
+def _send_email_resend(email, otp, subject, html_content, text_content):
+    """Send OTP email via Resend HTTPS REST API (port 443)."""
+    api_key = os.getenv('RESEND_API_KEY') or RESEND_API_KEY
+    if not api_key:
+        logger.error("Resend transport selected but RESEND_API_KEY is not set")
+        return False
+
+    sender_email = os.getenv('EMAIL_FROM') or EMAIL_FROM or "onboarding@resend.dev"
+    from_name = os.getenv('EMAIL_FROM_NAME') or EMAIL_FROM_NAME or 'Bookora'
+    from_field = f"{from_name} <{sender_email}>" if from_name and "<" not in sender_email else sender_email
+
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "from": from_field,
+        "to": [email],
+        "subject": subject,
+        "html": html_content,
+        "text": text_content,
+    }
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers=headers,
+        method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            return 200 <= response.status < 300
+    except urllib.error.HTTPError as err:
+        err_body = err.read().decode("utf-8", errors="replace")[:300]
+        logger.error("Resend API HTTP %s error: %s", err.code, err_body)
+        return False
+    except urllib.error.URLError as err:
+        logger.error("Resend API network error: %s", err.reason)
+        return False
+
+
+def _send_email_smtp(email, otp, subject, html_content, text_content):
+    """Send OTP email using standard SMTP (for local development)."""
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    from_addr = EMAIL_FROM or EMAIL_USER
+    msg['From'] = f"{EMAIL_FROM_NAME} <{from_addr}>" if EMAIL_FROM_NAME and "<" not in (from_addr or "") else from_addr
+    msg['To'] = email
+
+    msg.attach(MIMEText(text_content, 'plain', 'utf-8'))
+    msg.attach(MIMEText(html_content, 'html', 'utf-8'))
+
+    with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT, timeout=5) as server:
+        server.starttls()
+        server.login(EMAIL_USER, EMAIL_PASSWORD)
+        server.send_message(msg)
+    return True
+
+
+def send_email_otp(email, otp):
+    """Send OTP email using the configured email transport (HTTPS API or SMTP)."""
+    try:
+        subject = 'Your Bookora Verification Code'
+        html_content = _build_otp_html(otp)
+        text_content = _build_otp_text(otp)
+
+        provider = _get_email_provider()
+
+        if provider == 'brevo':
+            success = _send_email_brevo(email, otp, subject, html_content, text_content)
+        elif provider == 'resend':
+            success = _send_email_resend(email, otp, subject, html_content, text_content)
+        elif provider == 'smtp':
+            success = _send_email_smtp(email, otp, subject, html_content, text_content)
+        else:
+            logger.error('Unknown EMAIL_PROVIDER: %s', provider)
+            return False
+
+        if success:
+            logger.info('OTP email sent to %s via %s', mask_email(email), provider)
+            return True
+        return False
     except Exception:
-        logger.exception('Failed to send OTP email')
+        logger.exception('Failed to send OTP email via %s', _get_email_provider())
         return False
 
 @app.route('/api/send-otp', methods=['POST'])

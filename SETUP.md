@@ -12,7 +12,9 @@ Install and verify these tools before starting:
 
 - **MySQL or MariaDB** (via [XAMPP](https://www.apachefriends.org/) or standalone): Provides the relational database.
 - **Python 3.10+** with `pip`: Verify with `python --version` and `pip --version`.
-- **Gmail Account with an App Password**: Required for sending login verification OTP emails. Generate a 16-character App Password at [Google Account App Passwords](https://myaccount.google.com/apppasswords) (requires 2-Step Verification enabled).
+- **Email Service Credentials**:
+  - **Local Development**: Gmail Account with an App Password (SMTP via port 587). Generate a 16-character App Password at [Google Account App Passwords](https://myaccount.google.com/apppasswords).
+  - **Cloud Production (Render Free)**: [Brevo](https://www.brevo.com/) account (HTTPS API via port 443). Render Free web services block outbound SMTP (ports 25, 465, 587). Brevo provides 300 free emails/day to any recipient without requiring a custom domain. Alternatively, [Resend](https://resend.com/) is supported.
 - **Git**: For source version control.
 
 ---
@@ -91,7 +93,7 @@ cp .env.example .env
 
 Open `.env` in a text editor and configure your environment settings:
 
-### Option A: Local Development (XAMPP MySQL/MariaDB)
+### Option A: Local Development (XAMPP MySQL/MariaDB + Gmail SMTP)
 
 ```ini
 # Generate a secret key: python -c "import secrets; print(secrets.token_hex(32))"
@@ -105,15 +107,17 @@ DB_USER=root
 DB_PASSWORD=
 DB_NAME=bookora
 
-# Email OTP Configuration (Gmail SMTP)
+# Email OTP Configuration (Local Gmail SMTP)
+EMAIL_PROVIDER=smtp
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASSWORD=your-16-character-app-password
 EMAIL_FROM=your-email@gmail.com
+EMAIL_FROM_NAME=Bookora
 ```
 
-### Option B: Cloud Production (Aiven MySQL 8.4+)
+### Option B: Cloud Production (Aiven MySQL + Brevo HTTPS API on Render Free)
 
 ```ini
 SECRET_KEY=your-random-generated-secret-key
@@ -133,6 +137,13 @@ DB_POOL_SIZE=5
 # Option 2 (File path): Point DB_SSL_CA to ca.pem (local) or /etc/secrets/ca.pem (Render Secret Files)
 DB_SSL_CA=ca.pem
 DB_SSL_VERIFY_CERT=True
+
+# Email OTP Configuration (HTTPS REST API for Render Free)
+# Render Free blocks SMTP (ports 25/465/587). Brevo transmits over HTTPS (port 443).
+EMAIL_PROVIDER=brevo
+BREVO_API_KEY=xkeysib-your-brevo-api-key
+EMAIL_FROM=your-verified-brevo-sender@example.com
+EMAIL_FROM_NAME=Bookora
 ```
 
 > **Security & Deployment Notes:**
@@ -192,7 +203,7 @@ Run the full non-destructive unit test suite:
 ```bash
 python -m unittest discover -s tests -v
 # Or run specific test modules:
-python -m unittest tests.test_schedule_management tests.test_show_maintenance tests.test_show_availability tests.test_authorization -v
+python -m unittest tests.test_schedule_management tests.test_show_maintenance tests.test_show_availability tests.test_authorization tests.test_email_transport -v
 ```
 
 ### Verified Test Coverage:
@@ -200,7 +211,8 @@ python -m unittest tests.test_schedule_management tests.test_show_maintenance te
 - `test_show_maintenance`: 12 tests (rolling window generation, idempotency, seat layouts)
 - `test_show_availability`: 3 tests (past show filtering, time cutoff enforcement)
 - `test_authorization`: 12 tests (session-based authentication, IDOR protection, CSRF/session scoping)
-- **Result: 50 tests pass (0 failures, 0 errors)**.
+- `test_email_transport`: 14 tests (Brevo HTTPS, Resend HTTPS, local SMTP fallback, provider detection)
+- **Result: 64 tests pass (0 failures, 0 errors)**.
 
 ---
 
@@ -210,6 +222,7 @@ python -m unittest tests.test_schedule_management tests.test_show_maintenance te
 | :--- | :--- | :--- |
 | **Server Engine** | `python app.py` (Flask built-in server) | `gunicorn -w 4 -b 0.0.0.0:$PORT app:app` |
 | **Database** | XAMPP MariaDB (`localhost:3306`, root/no-password) | Managed Cloud Database (MySQL 8.0+ / MariaDB 10.4+) |
+| **Email Transport** | Gmail SMTP (`smtp.gmail.com:587`) | Brevo HTTPS REST API (`port 443`, 300 free/day) or Resend |
 | **`DEBUG` Flag** | `True` (allows development fallbacks) | `False` (crashes if required variables/secrets are missing) |
 | **Show Generation** | Initial bootstrapping via `scripts/seed_shows.py` | Daily headless cron job via `scripts/run_show_maintenance.py` |
 | **Cookies** | Plain HTTP permitted when `DEBUG=True` | Enforced HTTPS-only (`SESSION_COOKIE_SECURE=True`) |
@@ -224,9 +237,13 @@ python -m unittest tests.test_schedule_management tests.test_show_maintenance te
   MySQL is not running. Ensure the MySQL module is active in the XAMPP Control Panel.
 - **`Unknown database 'bookora'`**:
   You skipped schema initialization. Import `database/database_schema.sql` first.
-- **OTP Email Fails or Times Out**:
+- **OTP Email Fails on Render Free (`Failed to send email`)**:
+  Render Free web services block all outbound SMTP traffic on ports 25, 465, and 587. Configure Brevo HTTPS API in your Render environment variables:
+  `EMAIL_PROVIDER=brevo`, `BREVO_API_KEY=xkeysib-...`, and `EMAIL_FROM=your-verified-sender@example.com`.
+- **OTP Email Fails or Times Out Locally**:
   Ensure you are using a 16-character Gmail **App Password** (not your Google account password) and that outbound port 587 is not blocked by local firewall software.
 - **Port 5000 is in use**:
   Set `PORT=5001` in `.env` and navigate to `http://localhost:5001`.
 - **Database Connection Pool Exhaustion**:
   Ensure `DB_POOL_SIZE` is sized properly relative to your database `max_connections`. The default is 5 connections per process.
+
