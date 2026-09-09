@@ -31,6 +31,7 @@ import logging
 import threading
 import urllib.request
 import urllib.error
+from urllib.parse import urlparse, unquote
 from collections import defaultdict, deque, OrderedDict
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -183,30 +184,120 @@ if not DEBUG:
 # ============================================
 
 
-def _db_setting(name, dev_default):
+def _parse_database_url():
+    """Extract database connection parameters from DATABASE_URL or MYSQL_URL if present."""
+    raw_url = os.getenv('DATABASE_URL') or os.getenv('MYSQL_URL')
+    if not raw_url or not raw_url.strip():
+        return {}
+    raw_url = raw_url.strip().strip("'\"")
+    if '://' in raw_url:
+        _, remainder = raw_url.split('://', 1)
+        normalized_url = f'mysql://{remainder}'
+    else:
+        normalized_url = f'mysql://{raw_url}'
+
+    try:
+        parsed = urlparse(normalized_url)
+        params = {}
+        if parsed.hostname:
+            params['host'] = parsed.hostname.strip()
+        if parsed.port:
+            params['port'] = int(parsed.port)
+        if parsed.username:
+            params['user'] = unquote(parsed.username).strip()
+        if parsed.password:
+            params['password'] = unquote(parsed.password)
+        if parsed.path and parsed.path.strip('/'):
+            params['database'] = unquote(parsed.path.strip('/')).strip()
+        return params
+    except Exception as exc:
+        logger.warning('Failed to parse DATABASE_URL / MYSQL_URL: %s', exc)
+        return {}
+
+
+_PARSED_DB_URL = _parse_database_url()
+
+
+def _get_clean_env(name, aliases=()):
+    """Retrieve an environment variable or its aliases, stripping quotes and whitespace."""
+    for key in (name, *aliases):
+        val = os.getenv(key)
+        if val is not None:
+            cleaned = val.strip().strip("'\"")
+            if cleaned != '':
+                return cleaned
+    return None
+
+
+def _db_setting(name, dev_default, aliases=(), url_key=None):
+    """Database settings come from the environment or DATABASE_URL.
+    
+    Local development keeps the XAMPP defaults for convenience, but in
+    production every value must be supplied explicitly - the app must never be
+    able to quietly fall back to localhost / root / no-password against a real deployment.
     """
-    Database settings come from the environment. Local development keeps the
-    XAMPP defaults for convenience, but in production every value must be
-    supplied explicitly - the app must never be able to quietly fall back to
-    localhost / root / no-password against a real deployment.
-    """
-    value = os.getenv(name)
-    if value is not None and value.strip() != '':
-        return value
+    env_val = _get_clean_env(name, aliases)
+    if env_val is not None:
+        return env_val
+
+    if url_key and url_key in _PARSED_DB_URL:
+        return _PARSED_DB_URL[url_key]
+
     if DEBUG:
         return dev_default
+
     raise RuntimeError(
         f'{name} environment variable is required when DEBUG=False '
         '(localhost/root defaults are development-only).'
     )
 
 
+def _db_port():
+    """Retrieve database port with validation against silent default errors in production.
+
+    In development (DEBUG=True), defaults to 3306 for local XAMPP.
+    In production (DEBUG=False), DB_PORT must be specified (or extracted from DATABASE_URL)
+    because cloud services like Aiven MySQL listen on assigned high ports (e.g. 15053).
+    Defaulting to 3306 in production causes immediate TCP connection failure (InterfaceError: 2003).
+    """
+    raw_port = _get_clean_env('DB_PORT', ('MYSQL_PORT', 'MYSQLPORT'))
+    if raw_port is not None:
+        try:
+            return int(raw_port)
+        except ValueError:
+            raise RuntimeError(f'Invalid DB_PORT: {raw_port!r} must be an integer.')
+
+    if 'port' in _PARSED_DB_URL:
+        return int(_PARSED_DB_URL['port'])
+
+    if DEBUG:
+        return 3306
+
+    raise RuntimeError(
+        'DB_PORT environment variable is required when DEBUG=False '
+        '(e.g., Aiven port like 15053). Defaulting to 3306 in production is not allowed.'
+    )
+
+
+_db_password = _get_clean_env('DB_PASSWORD', ('MYSQL_PASSWORD', 'MYSQLPASSWORD', 'MYSQL_PWD'))
+if _db_password is None and 'password' in _PARSED_DB_URL:
+    _db_password = _PARSED_DB_URL['password']
+
+if _db_password is None or _db_password == '':
+    if not DEBUG:
+        raise RuntimeError('DB_PASSWORD environment variable is required when DEBUG=False.')
+    _db_password = ''
+
+
 DB_CONFIG = {
-    'host': _db_setting('DB_HOST', 'localhost'),
-    'port': int(os.getenv('DB_PORT', '3306')),
-    'user': _db_setting('DB_USER', 'root'),
-    'database': _db_setting('DB_NAME', 'bookora'),
+    'host': _db_setting('DB_HOST', 'localhost', aliases=('MYSQL_HOST', 'MYSQLHOST'), url_key='host'),
+    'port': _db_port(),
+    'user': _db_setting('DB_USER', 'root', aliases=('MYSQL_USER', 'MYSQLUSER', 'MYSQL_USERNAME'), url_key='user'),
+    'database': _db_setting('DB_NAME', 'bookora', aliases=('DB_DATABASE', 'MYSQL_DATABASE', 'MYSQLDATABASE'), url_key='database'),
+    'password': _db_password,
     'charset': 'utf8mb4',
+    # Connection timeout in seconds to prevent indefinitely hanging on unresponsive sockets
+    'connection_timeout': int(os.getenv('DB_CONNECT_TIMEOUT', '10')),
     # Buffered cursors by default. This is the actual guarantee behind the
     # explicit buffered=True at every conn.cursor(...) call site below: a
     # connection-level default also covers any cursor opened without the keyword,
@@ -225,28 +316,20 @@ DB_CONFIG = {
     'buffered': True,
 }
 
-# DB_PASSWORD is handled separately because XAMPP's default root account has an
-# empty password - acceptable locally, never in production.
-_db_password = os.getenv('DB_PASSWORD')
-if _db_password is None or _db_password == '':
-    if not DEBUG:
-        raise RuntimeError('DB_PASSWORD environment variable is required when DEBUG=False.')
-    _db_password = ''
-DB_CONFIG['password'] = _db_password
 
 def _resolve_ssl_ca():
     """Resolve the SSL CA certificate file path.
 
     Supports:
-      1. A path to an existing certificate file via DB_SSL_CA (e.g. 'ca.pem'
-         locally or '/etc/secrets/ca.pem' via Render Secret Files).
-      2. Direct PEM certificate content via DB_SSL_CA_CERT or DB_SSL_CA_CONTENT
+      1. Direct PEM certificate content via DB_SSL_CA_CERT or DB_SSL_CA_CONTENT
          (or DB_SSL_CA containing the PEM text directly). The certificate is
          written to a temporary file so mysql-connector can verify against it
          without requiring ca.pem to be committed to version control.
+      2. A path to an existing certificate file via DB_SSL_CA (e.g. 'ca.pem'
+         locally or '/etc/secrets/ca.pem' via Render Secret Files).
     """
-    ca_path = os.getenv('DB_SSL_CA')
-    ca_content = os.getenv('DB_SSL_CA_CERT') or os.getenv('DB_SSL_CA_CONTENT')
+    ca_path = _get_clean_env('DB_SSL_CA', ('MYSQL_SSL_CA',))
+    ca_content = _get_clean_env('DB_SSL_CA_CERT', ('DB_SSL_CA_CONTENT', 'MYSQL_SSL_CA_CERT'))
 
     if ca_path and 'BEGIN CERTIFICATE' in ca_path:
         ca_content = ca_path
@@ -255,17 +338,27 @@ def _resolve_ssl_ca():
     if ca_content and ca_content.strip():
         clean_pem = ca_content.replace('\\n', '\n').strip() + '\n'
         target_path = os.path.join(tempfile.gettempdir(), 'bookora-aiven-ca.pem')
-        with open(target_path, 'w', encoding='utf-8') as f:
-            f.write(clean_pem)
-        return target_path
+        try:
+            with open(target_path, 'w', encoding='utf-8') as f:
+                f.write(clean_pem)
+            return target_path
+        except Exception as exc:
+            logger.warning('Failed to write DB_SSL_CA_CERT to temporary file: %s', exc)
 
     if ca_path:
-        if not os.path.isabs(ca_path):
-            base_dir = os.path.abspath(os.path.dirname(__file__))
-            candidate = os.path.join(base_dir, ca_path)
-            if os.path.exists(candidate):
-                return candidate
-        return ca_path
+        if os.path.isabs(ca_path) and os.path.exists(ca_path):
+            return ca_path
+        base_dir = os.path.abspath(os.path.dirname(__file__))
+        candidate = os.path.join(base_dir, ca_path)
+        if os.path.exists(candidate):
+            return candidate
+
+        logger.warning(
+            'Configured DB_SSL_CA file "%s" does not exist on disk. '
+            'Skipping invalid path so connection does not fail on missing file.',
+            ca_path
+        )
+        return None
 
     return None
 
@@ -279,6 +372,9 @@ if _db_ssl_ca:
     DB_CONFIG['ssl_verify_cert'] = _env_bool('DB_SSL_VERIFY_CERT', True)
 elif _env_bool('DB_SSL_DISABLED', False):
     DB_CONFIG['ssl_disabled'] = True
+elif not DEBUG and ('aivencloud.com' in str(DB_CONFIG.get('host', '')) or _env_bool('DB_SSL_REQUIRED', False)):
+    # If connecting to Aiven MySQL without a specific CA file, enable TLS with system certs
+    DB_CONFIG['ssl_verify_cert'] = _env_bool('DB_SSL_VERIFY_CERT', False)
 
 # Per-process pool. Under Gunicorn each worker builds its own, so the total
 # connection count is DB_POOL_SIZE x worker count - keep that under the hosted
@@ -290,8 +386,7 @@ _db_pool_lock = threading.Lock()
 
 
 def _get_pool():
-    """
-    Build the connection pool on first use rather than at import time, so the
+    """Build the connection pool on first use rather than at import time, so the
     process still starts (and /healthz still answers) if the database happens to
     be briefly unreachable at boot.
     """
@@ -299,13 +394,31 @@ def _get_pool():
     if _db_pool is None:
         with _db_pool_lock:
             if _db_pool is None:
-                _db_pool = pooling.MySQLConnectionPool(
-                    pool_name='bookora_pool',
-                    pool_size=DB_POOL_SIZE,
-                    pool_reset_session=True,
-                    **DB_CONFIG,
+                target_host = DB_CONFIG.get('host')
+                target_port = DB_CONFIG.get('port')
+                target_user = DB_CONFIG.get('user')
+                target_database = DB_CONFIG.get('database')
+                has_ssl = bool(DB_CONFIG.get('ssl_ca') or DB_CONFIG.get('ssl_verify_cert'))
+
+                logger.info(
+                    'Initializing MySQL connection pool (host=%s, port=%s, user=%s, db=%s, ssl=%s, pool_size=%s)',
+                    target_host, target_port, target_user, target_database, has_ssl, DB_POOL_SIZE
                 )
-                logger.info('MySQL connection pool created (size=%s)', DB_POOL_SIZE)
+
+                try:
+                    _db_pool = pooling.MySQLConnectionPool(
+                        pool_name='bookora_pool',
+                        pool_size=DB_POOL_SIZE,
+                        pool_reset_session=True,
+                        **DB_CONFIG,
+                    )
+                    logger.info('MySQL connection pool created successfully (size=%s)', DB_POOL_SIZE)
+                except mysql.connector.Error as exc:
+                    logger.critical(
+                        'Failed to establish MySQL connection to %s:%s (database=%s, user=%s, ssl=%s): %s',
+                        target_host, target_port, target_database, target_user, has_ssl, exc
+                    )
+                    raise
     return _db_pool
 
 
