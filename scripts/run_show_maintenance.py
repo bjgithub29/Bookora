@@ -19,36 +19,13 @@ import mysql.connector
 from dotenv import load_dotenv
 
 from services.show_maintenance import maintain_upcoming_shows
+from app import DB_CONFIG
 
 load_dotenv(os.path.join(_PROJECT_ROOT, '.env'))
 
 
-def _required(name):
-    value = os.getenv(name)
-    if value is None or not value.strip():
-        raise RuntimeError(f'{name} is required for show maintenance.')
-    return value
-
-
-def db_config():
-    """Production-only connection configuration; values are never printed."""
-    config = {
-        'host': _required('DB_HOST'),
-        'port': int(os.getenv('DB_PORT', '3306')),
-        'user': _required('DB_USER'),
-        'password': os.getenv('DB_PASSWORD', ''),
-        'database': _required('DB_NAME'),
-        'charset': 'utf8mb4',
-    }
-    ssl_ca = os.getenv('DB_SSL_CA')
-    if ssl_ca:
-        config['ssl_ca'] = ssl_ca
-        config['ssl_verify_cert'] = os.getenv('DB_SSL_VERIFY_CERT', 'true').lower() in ('1', 'true', 'yes', 'on')
-    return config
-
-
 def main():
-    conn = mysql.connector.connect(**db_config())
+    conn = mysql.connector.connect(**DB_CONFIG)
     cursor = conn.cursor()
     try:
         # A database advisory lock prevents two scheduler invocations from doing

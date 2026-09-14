@@ -37,7 +37,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from functools import wraps
 from dotenv import load_dotenv
-from services.show_maintenance import business_now
+from services.show_maintenance import business_now, maintain_upcoming_shows
 
 # Load environment variables
 load_dotenv()
@@ -419,7 +419,85 @@ def _get_pool():
                         target_host, target_port, target_database, target_user, has_ssl, exc
                     )
                     raise
+        _ensure_background_scheduler()
     return _db_pool
+
+
+_maintenance_thread_started = False
+_maintenance_thread_lock = threading.Lock()
+
+
+def run_show_maintenance_job():
+    """Run show maintenance safely under an advisory lock on a dedicated connection.
+
+    Safe across multiple Gunicorn workers: only the worker that acquires the advisory
+    lock performs the maintenance run; all others skip immediately.
+    """
+    conn = None
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        cursor.execute("SELECT GET_LOCK('bookora_show_maintenance', 0)")
+        lock_res = cursor.fetchone()
+        has_lock = lock_res and lock_res[0] == 1
+        cursor.close()
+
+        if not has_lock:
+            logger.debug('Show maintenance skipped: another process holds the advisory lock.')
+            conn.close()
+            return None
+
+        try:
+            result = maintain_upcoming_shows(conn)
+            if result.get('created_shows', 0) > 0:
+                logger.info(
+                    'Background show maintenance completed: %s shows and %s seats created for %s through %s',
+                    result['created_shows'], result['created_seats'], result['today'], result['horizon']
+                )
+            else:
+                logger.info('Background show maintenance: 7-day rolling window is fully up to date.')
+            return result
+        finally:
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT RELEASE_LOCK('bookora_show_maintenance')")
+                cursor.fetchone()
+                cursor.close()
+            except Exception:
+                pass
+            conn.close()
+    except Exception as exc:
+        logger.warning('Background show maintenance failed: %s', exc)
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+        return None
+
+
+def _ensure_background_scheduler():
+    """Start background show maintenance thread once per process."""
+    global _maintenance_thread_started
+    if not _maintenance_thread_started and not _env_bool('DISABLE_SHOW_MAINTENANCE', False):
+        with _maintenance_thread_lock:
+            if not _maintenance_thread_started:
+                _maintenance_thread_started = True
+
+                def _loop():
+                    # Initial brief pause so worker process can finish bootstrapping
+                    time.sleep(5)
+                    while True:
+                        try:
+                            run_show_maintenance_job()
+                        except Exception as e:
+                            logger.warning('Periodic show maintenance encountered an error: %s', e)
+                        # Check twice daily (every 12 hours)
+                        time.sleep(12 * 3600)
+
+                t = threading.Thread(target=_loop, daemon=True, name='show-maintenance-worker')
+                t.start()
+                logger.info('Background show maintenance thread initialized.')
 
 
 def get_db():

@@ -70,7 +70,7 @@ try:
                 create_schedule(
                     conn,
                     movie_id=movie['id'], theatre_id=theatre['id'], show_time=show_time,
-                    start_date=today, end_date=end_date, days_of_week='1111111', is_active=True,
+                    start_date=today, end_date=None, days_of_week='1111111', is_active=True,
                 )
                 schedule_count += 1
 
